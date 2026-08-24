@@ -1,0 +1,578 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#172238">
+<title>Парк — панель директора</title>
+<style>:root{font-family:Arial,system-ui,sans-serif;color:#172238;background:#f2f5f8;font-synthesis:none;--navy:#172238;--gold:#e4a321;--muted:#677386;--red:#b73737;--green:#21825c;--line:#dfe5eb;--card:#fff}
+*{box-sizing:border-box}
+body{margin:0;min-width:320px;background:radial-gradient(circle at 85% 0,#fff4d6 0,transparent 27rem),#f2f5f8}
+button,input,select{font:inherit}
+button{cursor:pointer}
+.center{min-height:100vh;display:grid;place-items:center;padding:24px}
+.auth{width:min(460px,100%);background:#fff;border:1px solid var(--line);border-radius:24px;padding:32px;box-shadow:0 22px 70px #17223818}
+.brand{display:flex;align-items:center;gap:13px;font-weight:800;font-size:22px}
+.mark{width:43px;height:43px;background:var(--gold);border-radius:13px;display:grid;place-items:center;color:var(--navy)}
+h1{font-size:30px;line-height:1.15;margin:25px 0 8px}
+h2{margin:0;font-size:23px}
+.muted{color:var(--muted)}
+.field{display:grid;gap:7px;margin:14px 0}
+.field label{font-size:13px;font-weight:700}
+.field input,.field select,.select{height:48px;border:1px solid var(--line);border-radius:12px;padding:0 13px;background:#f8fafb;color:var(--navy);width:100%}
+.field input:focus,.field select:focus{outline:3px solid #e4a32133;border-color:var(--gold)}
+.btn{border:0;border-radius:12px;padding:12px 16px;font-weight:750;background:var(--navy);color:#fff;min-height:44px}
+.btn.gold{background:var(--gold);color:var(--navy)}
+.btn.red{background:var(--red)}
+.btn.green{background:var(--green)}
+.btn.ghost{background:#eef2f5;color:var(--navy)}
+.btn.small{padding:8px 11px;min-height:36px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.layout{min-height:100vh;display:grid;grid-template-columns:250px 1fr}
+.sidebar{background:var(--navy);color:#fff;padding:23px 18px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column}
+.sidebar .brand{padding:0 8px 24px}
+.nav{display:grid;gap:6px}
+.nav button{border:0;background:transparent;color:#bfc9d5;text-align:left;padding:12px 13px;border-radius:11px;font-weight:650}
+.nav button:hover,.nav button.active{background:#ffffff12;color:#fff}
+.userbox{margin-top:auto;border-top:1px solid #ffffff1c;padding:18px 8px 0;font-size:13px}
+.main{padding:28px 30px 50px;max-width:1500px;width:100%;margin:0 auto}
+.topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;margin-bottom:24px}
+.topbar p{margin:5px 0 0}
+.actions{display:flex;gap:9px;flex-wrap:wrap}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.metric,.card{background:var(--card);border:1px solid var(--line);border-radius:17px}
+.metric{padding:17px}
+.metric span{font-size:12px;color:var(--muted);font-weight:700}
+.metric strong{display:block;font-size:27px;margin-top:7px}
+.card{padding:20px;margin-top:16px}
+.cardhead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:15px}
+.status{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:800;padding:6px 9px;border-radius:999px;background:#edf1f4}
+.status.open{background:#daf3e8;color:#176644}
+.status.closed{background:#f7dfdf;color:#8d2525}
+.dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+.code{font-size:30px;letter-spacing:.18em;font-weight:800;background:#fff7df;border:1px solid #f3d68a;border-radius:13px;padding:10px 15px;display:inline-block}
+.tablewrap{overflow:auto}
+.table{width:100%;border-collapse:collapse;min-width:760px}
+.table th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:10px;border-bottom:1px solid var(--line)}
+.table td{padding:11px 10px;border-bottom:1px solid #edf0f3;font-size:13px;vertical-align:middle}
+.table tr:last-child td{border-bottom:0}
+.amount{font-weight:800;white-space:nowrap}
+.empty{text-align:center;padding:40px;color:var(--muted)}
+.split{display:grid;grid-template-columns:1.15fr .85fr;gap:16px}
+.attrlist{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.attr{border:1px solid var(--line);border-radius:13px;padding:13px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.attr strong{display:block}
+.attr small{color:var(--muted)}
+.modalback{position:fixed;inset:0;background:#10182799;display:grid;place-items:center;padding:18px;z-index:20}
+.modal{width:min(500px,100%);background:#fff;border-radius:20px;padding:24px;box-shadow:0 30px 90px #0005}
+.modal h3{margin:0 0 8px}
+.notice{padding:12px 14px;background:#fff7df;border:1px solid #f1d179;border-radius:12px;margin:14px 0}
+.danger{color:var(--red)}
+#toast{position:fixed;right:22px;bottom:22px;background:var(--navy);color:#fff;border-radius:12px;padding:13px 17px;box-shadow:0 10px 40px #0004;opacity:0;transform:translateY(15px);transition:.2s;pointer-events:none;z-index:50}
+#toast.show{opacity:1;transform:none}
+.mobilebar{display:none}
+@media(max-width:980px){.layout{grid-template-columns:1fr}
+.sidebar{display:none}
+.main{padding:20px 16px 90px}
+.grid{grid-template-columns:repeat(2,1fr)}
+.split{grid-template-columns:1fr}
+.mobilebar{display:flex;position:fixed;bottom:0;left:0;right:0;background:var(--navy);z-index:10;padding:7px;overflow:auto}
+.mobilebar button{background:transparent;border:0;color:#bcc7d3;padding:10px 13px;white-space:nowrap}
+.mobilebar button.active{color:var(--gold)}
+}
+@media(max-width:600px){.grid{grid-template-columns:1fr 1fr}
+.metric strong{font-size:22px}
+.topbar{display:block}
+.actions{margin-top:14px}
+.attrlist{grid-template-columns:1fr}
+.auth{padding:23px}
+.main{padding-inline:12px}
+}
+:root{--navy:#15233b;--gold:#f2b52b;--muted:#64748b;--red:#c43d48;--green:#198b63;--blue:#3276d2;--line:#dce5ee}
+body{background:radial-gradient(circle at 82% 0,#fff0bd 0,transparent 28rem),radial-gradient(circle at 5% 90%,#dcecff 0,transparent 28rem),#eef3f8}
+.brand small{display:block;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#9eabbc;margin-top:3px}
+.mark{background:linear-gradient(145deg,#ffd66b,var(--gold));border-radius:14px;box-shadow:0 8px 24px #e4a3213d}
+.btn{border-radius:13px;transition:transform .16s ease,box-shadow .16s ease,opacity .16s}
+.btn:hover{transform:translateY(-1px);box-shadow:0 8px 22px #15233b1f}
+.btn:active{transform:translateY(0)}
+.sidebar{background:linear-gradient(180deg,#15233b 0,#0d1729);box-shadow:10px 0 35px #15233b18}
+.nav button.active{box-shadow:inset 3px 0 var(--gold)}
+.navbadge{float:right;min-width:22px;height:22px;padding:2px 6px;border-radius:20px;background:var(--gold);color:var(--navy);text-align:center}
+.metric,.card{background:linear-gradient(155deg,#fff 0,#fbfdff);border-color:#fff;border-radius:20px;box-shadow:0 10px 32px #15233b0b}
+.metric{position:relative;overflow:hidden}
+.metric:after{content:"";position:absolute;width:72px;height:72px;border-radius:50%;right:-24px;top:-26px;background:currentColor;opacity:.08}
+.metric.blue{color:var(--blue)}
+.metric.goldtone{color:#a66d00}
+.metric.redtone{color:var(--red)}
+.metric.greentone{color:var(--green)}
+.metric span{color:var(--muted)}
+.metric strong{color:var(--navy)}
+.card{animation:rise .28s ease both}
+.daycard{background:linear-gradient(145deg,#fff 30%,#fff8e5)}
+.attr{background:#f9fbfd;transition:.16s}
+.attr:hover{border-color:#b9c9da;background:#fff}
+.refund-alert{width:100%;border:0;border-radius:18px;padding:15px 18px;margin:0 0 16px;background:linear-gradient(100deg,#fff2c7,#ffe39a);color:var(--navy);display:flex;align-items:center;gap:13px;text-align:left;box-shadow:0 10px 28px #e4a32124}
+.refund-alert .bell{font-size:25px}
+.refund-alert span:nth-child(2){display:grid;gap:2px}
+.refund-alert small{color:#755c23}
+.refund-alert b:last-child{margin-left:auto}
+.refund-card{border-color:#f2d886}
+.status.waiting{background:#fff0bb;color:#7c5900}
+.refund-list{display:grid;gap:10px}
+.refund-item{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:14px;border-radius:15px;background:#fffaf0;border:1px solid #f2dfac}
+.refund-item small{display:block;color:var(--muted);margin-top:4px}
+.refund-item p{margin:8px 0 0}
+.offline-tag{display:inline-block;margin-top:4px;padding:3px 7px;border-radius:20px;background:#e8f1fb;color:#2e659d;font-size:10px;font-weight:800}
+.compact{padding:20px}
+@keyframes rise{0%{opacity:0;transform:translateY(5px)}
+to{opacity:1;transform:none}
+}
+@media(max-width:600px){.refund-item{display:block}
+.refund-item .actions{margin-top:12px}
+.refund-alert b:last-child{display:none}
+}
+.block{display:block;color:var(--muted);margin-top:4px}
+.small-text{font-size:12px}
+.section-label{font-size:11px;font-weight:800;letter-spacing:.06em;color:var(--muted);margin:15px 0 8px}
+.overview-attractions{display:grid;gap:10px}
+.overview-attraction{padding:13px;border:1px solid var(--line);border-radius:15px;background:#f9fbfd}
+.overview-attraction .cardhead{margin-bottom:10px}
+.overview-attraction small{display:block;color:var(--muted);margin-top:4px}
+.overview-attraction>.btn{margin-top:10px}
+.worker-chips,.option-pills{display:flex;flex-wrap:wrap;gap:7px}
+.worker-chip,.option-pill{display:inline-flex;align-items:center;border-radius:999px;padding:6px 9px;font-size:11px;font-weight:750}
+.worker-chip{background:#e5efff;color:#245a9d}
+.option-pill.enabled{background:#daf3e8;color:#176644}
+.option-pill.disabled{background:#edf1f4;color:#8a94a3;text-decoration:line-through}
+.attraction-board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}
+.attraction-card{background:linear-gradient(150deg,#fff,#f8fbff);border:1px solid #fff;border-radius:21px;padding:19px;box-shadow:0 10px 32px #15233b0b}
+.attraction-card h3{margin:0 0 4px}
+.attraction-card .price{font-size:22px}
+.attraction-card .actions{margin-top:18px}
+.assignment-name{display:inline-block;background:#fff3cd;color:#7b5904;border-radius:9px;padding:6px 9px;font-weight:700}
+.task-alert{width:100%;border:0;border-radius:18px;padding:15px 18px;margin:0 0 16px;background:linear-gradient(100deg,#dff5eb,#c3eadc);color:var(--navy);display:flex;align-items:center;gap:13px;text-align:left;box-shadow:0 10px 28px #198b6320}
+.task-alert>span:first-child{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--green);color:white;font-weight:900}
+.task-alert span:nth-child(2){display:grid;gap:2px}
+.task-alert b:last-child{margin-left:auto}
+.task-list{display:grid;gap:11px}
+.task-item{display:flex;align-items:center;gap:14px;padding:15px;border-radius:16px;background:#f8fafc;border:1px solid var(--line)}
+.task-item.complete{background:#f1fbf6;border-color:#bde4d2}
+.task-item.cancelled{opacity:.62}
+.task-check{width:42px;height:42px;flex:none;border-radius:13px;background:#e8eef6;color:var(--navy);display:grid;place-items:center;font-size:18px;font-weight:850}
+.task-item.complete .task-check{background:var(--green);color:white}
+.task-body{min-width:0;flex:1}
+.task-body .cardhead{margin-bottom:5px}
+.task-body small{color:var(--muted)}
+.task-progress{height:6px;border-radius:99px;background:#dfe7ef;margin-top:10px;overflow:hidden}
+.task-progress i{display:block;height:100%;background:var(--green)}
+.check-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:18px 0}
+.check-card{display:flex;align-items:center;gap:9px;border:1px solid var(--line);border-radius:13px;padding:12px;background:#f8fafc;font-weight:700}
+.modal textarea{width:100%;resize:vertical;border:1px solid var(--line);border-radius:12px;padding:12px;background:#f8fafb;color:var(--navy)}
+.report-toolbar{display:flex;align-items:end;gap:16px}
+.report-toolbar .field{width:min(380px,100%)}
+.report-current{margin-bottom:14px;display:grid;gap:3px}
+.report-current span{font-size:11px;color:var(--muted);font-weight:800}
+.report-tabs{display:flex;gap:9px;overflow:auto;padding:3px 2px 12px}
+.report-tab{min-width:150px;border:1px solid var(--line);background:white;border-radius:14px;padding:12px;text-align:left;color:var(--navy)}
+.report-tab strong,.report-tab span{display:block}
+.report-tab span{font-size:11px;color:var(--muted);margin-top:4px}
+.report-tab.active{border-color:var(--gold);background:#fff7df;box-shadow:0 6px 18px #e4a32120}
+.report-heading{display:flex;justify-content:space-between;align-items:center;gap:15px}
+.report-heading h2{margin:3px 0}
+.report-heading p{margin:5px 0 0}
+@media(max-width:1100px){.attraction-board{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){.attraction-board{grid-template-columns:1fr}.check-grid{grid-template-columns:1fr}.task-item{align-items:flex-start;flex-wrap:wrap}.task-body{min-width:calc(100% - 60px)}.report-heading{display:block}.report-heading .option-pills{margin-top:14px}.task-alert b:last-child{display:none}}
+</style>
+</head>
+<body>
+<div id="app"></div><div id="toast" role="status" aria-live="polite"></div>
+<script type="module">function G2(base,key){
+  const storageKey="park_manager_session_v1",listeners=new Set();let session=null;
+  try{session=JSON.parse(localStorage.getItem(storageKey)||"null")}catch{}
+  const save=s=>{session=s;s?localStorage.setItem(storageKey,JSON.stringify(s)):localStorage.removeItem(storageKey)};
+  const errorOf=(status,data)=>({message:data?.message||data?.msg||data?.error_description||data?.error||`HTTP ${status}`});
+  async function raw(path,{method="GET",body,token,headers={}}={}){const h={apikey:key,...headers};if(token)h.Authorization=`Bearer ${token}`;if(body!==undefined)h["Content-Type"]="application/json";let res;try{res=await fetch(base+path,{method,headers:h,body:body===undefined?undefined:JSON.stringify(body)})}catch(e){return{data:null,error:{message:"Сервер недоступен: "+e.message},status:0}}const text=await res.text();let data=null;try{data=text?JSON.parse(text):null}catch{data=text}return res.ok?{data,error:null,status:res.status}:{data:null,error:errorOf(res.status,data),status:res.status}}
+  const normalize=d=>{if(!d)return null;const expires_in=Number(d.expires_in||3600);return{...d,expires_at:Math.floor(Date.now()/1000)+expires_in}};
+  async function refresh(){if(!session?.refresh_token)return session;if(session.expires_at&&session.expires_at>Date.now()/1000+90)return session;const r=await raw("/auth/v1/token?grant_type=refresh_token",{method:"POST",body:{refresh_token:session.refresh_token}});if(r.error){save(null);return null}save(normalize(r.data));return session}
+  async function bearer(){await refresh();return session?.access_token||key}
+  async function api(path,options={}){return raw(path,{...options,token:await bearer()})}
+  class Query{
+    constructor(table){this.table=table;this.method="GET";this.params=new URLSearchParams;this.body=undefined;this.headers={}}
+    select(cols="*"){this.params.set("select",cols);if(this.method!=="GET")this.headers.Prefer="return=representation";return this}
+    insert(value){this.method="POST";this.body=value;this.headers.Prefer="return=representation";return this}
+    update(value){this.method="PATCH";this.body=value;this.headers.Prefer="return=representation";return this}
+    delete(){this.method="DELETE";this.headers.Prefer="return=representation";return this}
+    eq(column,value){this.params.append(column,"eq."+String(value));return this}
+    order(column,{ascending=true}={}){this.params.append("order",`${column}.${ascending?"asc":"desc"}`);return this}
+    limit(value){this.params.set("limit",String(value));return this}
+    single(){this.headers.Accept="application/vnd.pgrst.object+json";return this}
+    then(resolve,reject){return this.run().then(resolve,reject)}
+    run(){const q=this.params.toString();return api(`/rest/v1/${this.table}${q?"?"+q:""}`,{method:this.method,body:this.body,headers:this.headers})}
+  }
+  const auth={
+    onAuthStateChange(cb){listeners.add(cb);return{data:{subscription:{unsubscribe:()=>listeners.delete(cb)}}}},
+    async getSession(){const p=new URLSearchParams(location.hash.replace(/^#/,""));if(p.get("access_token")){const access_token=p.get("access_token"),refresh_token=p.get("refresh_token"),expires_in=Number(p.get("expires_in")||3600);let s=normalize({access_token,refresh_token,expires_in,token_type:"bearer"});const u=await raw("/auth/v1/user",{token:access_token});if(!u.error)s.user=u.data;save(s);if(p.get("type")==="recovery")listeners.forEach(cb=>cb("PASSWORD_RECOVERY",session))}return{data:{session},error:null}},
+    async signInWithPassword({email,password}){const r=await raw("/auth/v1/token?grant_type=password",{method:"POST",body:{email,password}});if(!r.error)save(normalize(r.data));return r.error?{data:{session:null},error:r.error}:{data:{session},error:null}},
+    async signOut(){if(session?.access_token)await raw("/auth/v1/logout",{method:"POST",token:session.access_token});save(null);listeners.forEach(cb=>cb("SIGNED_OUT",null));return{error:null}},
+    async resetPasswordForEmail(email,{redirectTo}={}){const q=redirectTo?`?redirect_to=${encodeURIComponent(redirectTo)}`:"";return raw("/auth/v1/recover"+q,{method:"POST",body:{email}})},
+    async updateUser(values){await refresh();const r=await raw("/auth/v1/user",{method:"PUT",body:values,token:session?.access_token});if(!r.error&&session){session.user=r.data;save(session)}return r}
+  };
+  return{auth,from:t=>new Query(t),rpc:(name,args)=>api(`/rest/v1/rpc/${name}`,{method:"POST",body:args}),functions:{invoke:(name,{body}={})=>api(`/functions/v1/${name}`,{method:"POST",body})},channel(){const callbacks=new Set;return{on(...args){const cb=args.at(-1);if(typeof cb==="function")callbacks.add(cb);return this},subscribe(){this.timer=setInterval(()=>callbacks.forEach(cb=>cb()),15000);return this}}},removeChannel(ch){clearInterval(ch?.timer)}}
+}
+
+
+
+const Sy = "./DejaVuSans.ttf", Ll = document.querySelector("#app"), qc = document.querySelector("#toast"), Ae = {
+  client: null,
+  session: null,
+  profile: null,
+  page: "overview",
+  days: [],
+  day: null,
+  attractions: [],
+  attractionDays: [],
+  workers: [],
+  tickets: [],
+  shifts: [],
+  refunds: [],
+  saleOptions: [],
+  assignments: [],
+  tasks: [],
+  reportDayId: null,
+  reportAttractionId: null,
+  channel: null,
+  recovering: false,
+  lastPendingIds: null
+}, Mt = (r) => String(r ?? "").replace(/[&<>'"]/g, (e) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[e]), dr = (r) => new Intl.NumberFormat("ru-RU").format(Number(r || 0)) + " \u20BD", El = (r) => r ? new Intl.DateTimeFormat("ru-RU", { dateStyle: "short", timeStyle: "medium", timeZone: "Europe/Samara" }).format(new Date(r)) : "\u2014", Zp = (r) => ({ CASH: "\u041D\u0430\u043B\u0438\u0447\u043D\u044B\u0435", CARD: "\u041A\u0430\u0440\u0442\u0430", TRANSFER: "\u041F\u0435\u0440\u0435\u0432\u043E\u0434", CHILD: "\u0420\u0435\u0431\u0451\u043D\u043E\u043A", FREE: "\u0411\u0435\u0441\u043F\u043B\u0430\u0442\u043D\u043E" })[r] || r, Qp = (r) => ({ VALID: "\u0414\u0435\u0439\u0441\u0442\u0432\u0438\u0442\u0435\u043B\u0435\u043D", CANCELLED: "\u041E\u0442\u043C\u0435\u043D\u0451\u043D", REFUNDED: "\u0412\u043E\u0437\u0432\u0440\u0430\u0442" })[r] || r;
+function Er(r) {
+  qc.textContent = r, qc.classList.add("show"), setTimeout(() => qc.classList.remove("show"), 2600);
+}
+function Ay() {
+  return { url: "https://bzhawqxmqwazfxsvsxdt.supabase.co", key: "sb_publishable_gvnXtz1s_ZCA6WnsScbYiA_U1NbtJmN" };
+}
+function Ja() {
+  Ll.innerHTML = '<main class="center"><form class="auth" id="login-form"><div class="brand"><span class="mark">\u041F</span>\u0411\u0438\u043B\u0435\u0442\u044B \u043F\u0430\u0440\u043A\u0430</div><h1>\u0412\u0445\u043E\u0434 \u0434\u0438\u0440\u0435\u043A\u0442\u043E\u0440\u0430</h1><p class="muted">\u041E\u043D\u043B\u0430\u0439\u043D-\u043A\u043E\u043D\u0442\u0440\u043E\u043B\u044C \u0430\u0442\u0442\u0440\u0430\u043A\u0446\u0438\u043E\u043D\u043E\u0432, \u0441\u043E\u0442\u0440\u0443\u0434\u043D\u0438\u043A\u043E\u0432 \u0438 \u0432\u044B\u0440\u0443\u0447\u043A\u0438.</p><div class="field"><label>Email</label><input name="email" type="email" autocomplete="username" required></div><div class="field"><label>\u041F\u0430\u0440\u043E\u043B\u044C</label><input name="password" type="password" autocomplete="current-password" required></div><button class="btn gold" type="submit">\u0412\u043E\u0439\u0442\u0438</button><button class="btn ghost" id="forgot-password" type="button">\u0417\u0430\u0431\u044B\u043B\u0438 \u043F\u0430\u0440\u043E\u043B\u044C?</button><button class="btn ghost" id="server-settings" type="button">\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u0441\u0435\u0440\u0432\u0435\u0440\u0430</button></form></main>', document.querySelector("#login-form").addEventListener("submit", ky), document.querySelector("#forgot-password").onclick = xy, document.querySelector("#server-settings").onclick = () => {
+    localStorage.removeItem("park_url"), localStorage.removeItem("park_key"), location.reload();
+  };
+}
+async function ky(r) {
+  r.preventDefault();
+  const e = r.target.querySelector("button[type=submit]");
+  e.disabled = true;
+  const { data: t, error: n } = await Ae.client.auth.signInWithPassword({ email: r.target.email.value.trim(), password: r.target.password.value });
+  if (e.disabled = false, n) return Er("\u041D\u0435\u0432\u0435\u0440\u043D\u044B\u0439 email \u0438\u043B\u0438 \u043F\u0430\u0440\u043E\u043B\u044C");
+  Ae.session = t.session, await e0();
+}
+async function xy() {
+  const r = document.querySelector('#login-form [name="email"]').value.trim();
+  if (!r) return Er("\u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0432\u0432\u0435\u0434\u0438\u0442\u0435 Email");
+  const e = document.querySelector("#forgot-password");
+  e.disabled = true;
+  const t = `${location.origin}${location.pathname}`, { error: n } = await Ae.client.auth.resetPasswordForEmail(r, { redirectTo: t });
+  if (e.disabled = false, n) return Er("\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043E\u0442\u043F\u0440\u0430\u0432\u0438\u0442\u044C \u043F\u0438\u0441\u044C\u043C\u043E: " + n.message);
+  Ll.innerHTML = `<main class="center"><section class="auth"><div class="brand"><span class="mark">\u041F</span>\u0411\u0438\u043B\u0435\u0442\u044B \u043F\u0430\u0440\u043A\u0430</div><h1>\u041F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u043F\u043E\u0447\u0442\u0443</h1><p>\u041C\u044B \u043E\u0442\u043F\u0440\u0430\u0432\u0438\u043B\u0438 \u0441\u0441\u044B\u043B\u043A\u0443 \u0434\u043B\u044F \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u044F \u043D\u043E\u0432\u043E\u0433\u043E \u043F\u0430\u0440\u043E\u043B\u044F \u043D\u0430 <strong>${Mt(r)}</strong>.</p><p class="muted">\u041E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 \u0441\u0441\u044B\u043B\u043A\u0443 \u043D\u0430 \u044D\u0442\u043E\u043C \u0443\u0441\u0442\u0440\u043E\u0439\u0441\u0442\u0432\u0435. \u0415\u0441\u043B\u0438 \u043F\u0438\u0441\u044C\u043C\u0430 \u043D\u0435\u0442, \u043F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u043F\u0430\u043F\u043A\u0443 \xAB\u0421\u043F\u0430\u043C\xBB.</p><button class="btn ghost" id="back-login">\u0412\u0435\u0440\u043D\u0443\u0442\u044C\u0441\u044F \u043A\u043E \u0432\u0445\u043E\u0434\u0443</button></section></main>`, document.querySelector("#back-login").onclick = Ja;
+}
+function vd() {
+  Ae.recovering = true, Ll.innerHTML = '<main class="center"><form class="auth" id="reset-form"><div class="brand"><span class="mark">\u041F</span>\u0411\u0438\u043B\u0435\u0442\u044B \u043F\u0430\u0440\u043A\u0430</div><h1>\u041D\u043E\u0432\u044B\u0439 \u043F\u0430\u0440\u043E\u043B\u044C</h1><p class="muted">\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043D\u043E\u0432\u044B\u0439 \u043F\u0430\u0440\u043E\u043B\u044C \u0434\u0438\u0440\u0435\u043A\u0442\u043E\u0440\u0430 \u0434\u0432\u0430 \u0440\u0430\u0437\u0430.</p><div class="field"><label>\u041D\u043E\u0432\u044B\u0439 \u043F\u0430\u0440\u043E\u043B\u044C</label><input name="password" type="password" autocomplete="new-password" minlength="8" required></div><div class="field"><label>\u041F\u043E\u0432\u0442\u043E\u0440\u0438\u0442\u0435 \u043F\u0430\u0440\u043E\u043B\u044C</label><input name="confirm" type="password" autocomplete="new-password" minlength="8" required></div><button class="btn gold" type="submit">\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C \u043D\u043E\u0432\u044B\u0439 \u043F\u0430\u0440\u043E\u043B\u044C</button></form></main>', document.querySelector("#reset-form").onsubmit = Ny;
+}
+async function Ny(r) {
+  r.preventDefault();
+  const e = r.target.password.value;
+  if (e !== r.target.confirm.value) return Er("\u041F\u0430\u0440\u043E\u043B\u0438 \u043D\u0435 \u0441\u043E\u0432\u043F\u0430\u0434\u0430\u044E\u0442");
+  const t = r.target.querySelector("button");
+  t.disabled = true;
+  const { error: n } = await Ae.client.auth.updateUser({ password: e });
+  if (t.disabled = false, n) return Er("\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0438\u0437\u043C\u0435\u043D\u0438\u0442\u044C \u043F\u0430\u0440\u043E\u043B\u044C: " + n.message);
+  await Ae.client.auth.signOut(), Ae.session = null, Ae.recovering = false, history.replaceState({}, document.title, location.pathname), Ja(), Er("\u041F\u0430\u0440\u043E\u043B\u044C \u0438\u0437\u043C\u0435\u043D\u0451\u043D. \u0422\u0435\u043F\u0435\u0440\u044C \u0432\u043E\u0439\u0434\u0438\u0442\u0435 \u0441\u043D\u043E\u0432\u0430");
+}
+async function e0() {
+  const r = Ae.session?.user?.id;
+  if (!r) return Ja();
+  const { data: e, error: t } = await Ae.client.from("profiles").select("*").eq("id", r).single();
+  if (t || e?.role !== "manager" || !e?.active) return await Ae.client.auth.signOut(), Er("\u0423 \u044D\u0442\u043E\u0439 \u0443\u0447\u0451\u0442\u043D\u043E\u0439 \u0437\u0430\u043F\u0438\u0441\u0438 \u043D\u0435\u0442 \u043F\u0440\u0430\u0432 \u0434\u0438\u0440\u0435\u043A\u0442\u043E\u0440\u0430");
+  Ae.profile = e, await t0(), Ly(), Wa();
+}
+async function t0() {
+  const [r, e, t, n, i, s, sale, assignments, tasks] = await Promise.all([
+    Ae.client.from("business_days").select("id,label,daily_code,status,opened_at,closed_at").order("id", { ascending: false }).limit(120),
+    Ae.client.from("attractions").select("*").order("id"),
+    Ae.client.from("profiles").select("id,employee_code,display_name,active,must_change_pin,created_at").eq("role", "worker").order("display_name"),
+    Ae.client.from("ticket_details").select("*").order("created_at", { ascending: false }).limit(1e3),
+    Ae.client.from("shifts").select("*,profiles!shifts_worker_id_fkey(display_name,employee_code),attractions(name)").order("started_at", { ascending: false }).limit(500),
+    Ae.client.from("refund_request_details").select("*").order("created_at", { ascending: false }).limit(500),
+    Ae.client.from("attraction_sale_options").select("*").order("attraction_id"),
+    Ae.client.from("manager_assignment_details").select("*").order("assigned_at", { ascending: false }),
+    Ae.client.from("manager_task_details").select("*").order("created_at", { ascending: false }).limit(300)
+  ]);
+  [r, e, t, n, i].find((l) => l.error)?.error && Er("\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043E\u0431\u043D\u043E\u0432\u0438\u0442\u044C \u0434\u0430\u043D\u043D\u044B\u0435"), Ae.days = r.data || [], Ae.day = Ae.days.find((l) => l.status === "OPEN") || null, Ae.attractions = e.data || [], Ae.workers = t.data || [], Ae.tickets = n.data || [], Ae.shifts = i.data || [], Ae.saleOptions = sale.data || [], Ae.assignments = assignments.data || [], Ae.tasks = tasks.data || [];
+  const o = s.data || [];
+  if (Ey(o), Ae.refunds = o, Ae.day) {
+    const { data: l } = await Ae.client.from("attraction_days").select("*,attractions(*)").eq("day_id", Ae.day.id).order("attraction_id");
+    Ae.attractionDays = l || [];
+  } else Ae.attractionDays = [];
+}
+function Ly() {
+  Ae.channel && Ae.client.removeChannel(Ae.channel), Ae.channel = Ae.client.channel("manager-live").on("postgres_changes", { event: "*", schema: "public", table: "tickets" }, Jr).on("postgres_changes", { event: "*", schema: "public", table: "shifts" }, Jr).on("postgres_changes", { event: "*", schema: "public", table: "attraction_days" }, Jr).on("postgres_changes", { event: "*", schema: "public", table: "refund_requests" }, Jr).on("postgres_changes", { event: "*", schema: "public", table: "worker_assignments" }, Jr).on("postgres_changes", { event: "*", schema: "public", table: "worker_tasks" }, Jr).on("postgres_changes", { event: "*", schema: "public", table: "worker_task_recipients" }, Jr).subscribe();
+}
+function Ey(r) {
+  const e = new Set(r.filter((t) => t.status === "PENDING").map((t) => String(t.id)));
+  Ae.lastPendingIds && [...e].filter((n) => !Ae.lastPendingIds.has(n)).length && (Er("\u041D\u043E\u0432\u044B\u0439 \u0437\u0430\u043F\u0440\u043E\u0441 \u043D\u0430 \u0432\u043E\u0437\u0432\u0440\u0430\u0442"), "Notification" in window && Notification.permission === "granted" && new Notification("\u0411\u0438\u043B\u0435\u0442\u044B \u043F\u0430\u0440\u043A\u0430", { body: "\u041D\u043E\u0432\u044B\u0439 \u0437\u0430\u043F\u0440\u043E\u0441 \u043D\u0430 \u0432\u043E\u0437\u0432\u0440\u0430\u0442 \u0442\u0440\u0435\u0431\u0443\u0435\u0442 \u0440\u0435\u0448\u0435\u043D\u0438\u044F" })), Ae.lastPendingIds = e;
+}
+let md;
+function Jr() {
+  clearTimeout(md), md = setTimeout(async () => {
+    await t0(), Wa();
+  }, 350);
+}
+const yd = [["overview", "\u041E\u0431\u0437\u043E\u0440"], ["attractions", "\u0410\u0442\u0442\u0440\u0430\u043A\u0446\u0438\u043E\u043D\u044B"], ["workers", "\u0421\u043E\u0442\u0440\u0443\u0434\u043D\u0438\u043A\u0438"], ["tasks", "\u0417\u0430\u0434\u0430\u0447\u0438"], ["tickets", "\u0411\u0438\u043B\u0435\u0442\u044B"], ["reports", "\u041E\u0442\u0447\u0451\u0442\u044B"]], bu = () => Ae.refunds.filter((r) => r.status === "PENDING"), pendingTasks = () => Ae.tasks.filter((r) => r.status === "ACTIVE" && Number(r.completed_count || 0) < Number(r.recipients_count || 0));
+function bd(r, e) {
+  const t = r === "tickets" ? bu().length : r === "tasks" ? pendingTasks().length : 0;
+  return t ? `${e} <b class="navbadge">${t}</b>` : e;
+}
+function Wa() {
+  const r = Py();
+  Ll.innerHTML = `<div class="layout"><aside class="sidebar"><div class="brand"><span class="mark">\u041F</span><span>\u0411\u0438\u043B\u0435\u0442\u044B \u043F\u0430\u0440\u043A\u0430<small>\u0423\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u0435 \u043E\u043D\u043B\u0430\u0439\u043D</small></span></div><nav class="nav">${yd.map(([e, t]) => `<button data-page="${e}" class="${Ae.page === e ? "active" : ""}">${bd(e, t)}</button>`).join("")}</nav><div class="userbox"><strong>${Mt(Ae.profile.display_name)}</strong><br><span>${Mt(Ae.session.user.email)}</span><br><button class="btn ghost small" data-action="logout" style="margin-top:12px">\u0412\u044B\u0439\u0442\u0438</button></div></aside><main class="main">${r}</main><nav class="mobilebar">${yd.map(([e, t]) => `<button data-page="${e}" class="${Ae.page === e ? "active" : ""}">${bd(e, t)}</button>`).join("")}</nav></div>`, Fy();
+}
+function wu(r) {
+  const e = r.filter((i) => i.status !== "CANCELLED"), t = r.filter((i) => i.status === "VALID"), n = r.filter((i) => i.status === "REFUNDED");
+  return { visitors: e.length, gross: e.reduce((i, s) => i + Number(s.price), 0), refund: n.reduce((i, s) => i + Number(s.price), 0), net: t.reduce((i, s) => i + Number(s.price), 0), free: t.filter((i) => i.payment === "FREE" || i.payment === "CHILD").length };
+}
+function _u(r = Ae.day?.id) {
+  return Ae.tickets.filter((e) => Number(e.day_id) === Number(r));
+}
+function currentAssignments(dayId = Ae.day?.id) {
+  return Ae.assignments.filter((row) => Number(row.day_id) === Number(dayId) && row.active);
+}
+function workersAtAttraction(attractionId, dayId = Ae.day?.id) {
+  return currentAssignments(dayId).filter((row) => Number(row.attraction_id) === Number(attractionId));
+}
+function assignmentForWorker(workerId, dayId = Ae.day?.id) {
+  return currentAssignments(dayId).find((row) => String(row.worker_id) === String(workerId));
+}
+function optionsForAttraction(attractionId) {
+  return Ae.saleOptions.find((row) => Number(row.attraction_id) === Number(attractionId)) || {
+    allow_cash: true,
+    allow_card: true,
+    allow_transfer: true,
+    allow_child: true,
+    allow_free: true
+  };
+}
+function optionPills(attractionId) {
+  const options = optionsForAttraction(attractionId);
+  const labels = [
+    ["allow_cash", "Наличные"],
+    ["allow_card", "Карта"],
+    ["allow_transfer", "Перевод"],
+    ["allow_child", "Ребёнок"],
+    ["allow_free", "Бесплатно"]
+  ];
+  return `<div class="option-pills">${labels.map(([key, label]) => `<span class="option-pill ${options[key] ? "enabled" : "disabled"}">${label}</span>`).join("")}</div>`;
+}
+function workerChips(attractionId, dayId = Ae.day?.id) {
+  const rows = workersAtAttraction(attractionId, dayId);
+  return rows.length ? `<div class="worker-chips">${rows.map((row) => `<span class="worker-chip">${Mt(row.worker_name)}</span>`).join("")}</div>` : '<span class="muted small-text">Сотрудники не назначены</span>';
+}
+function attractionForTicket(ticket) {
+  return Ae.attractions.find((row) => Number(row.id) === Number(ticket.attraction_id)) || Ae.attractions.find((row) => row.name === ticket.attraction_name);
+}
+function ticketsForAttraction(dayId, attractionId) {
+  return _u(dayId).filter((ticket) => Number(attractionForTicket(ticket)?.id) === Number(attractionId));
+}
+function Ya(r, e, t = "") {
+  return `<header class="topbar"><div><h2>${r}</h2><p class="muted">${e}</p></div><div class="actions">${t}</div></header>`;
+}
+function Py() {
+  return Ae.page === "overview" ? Cy() : Ae.page === "attractions" ? Ty() : Ae.page === "workers" ? Ry() : Ae.page === "tasks" ? taskPage() : Ae.page === "tickets" ? Oy() : jy();
+}
+function Cy() {
+  const tickets = _u(), stats = wu(tickets), refunds = bu(), tasks = pendingTasks();
+  const notificationButton = "Notification" in window && Notification.permission !== "granted" ? '<button class="btn ghost" data-action="enable-notifications">Включить уведомления</button>' : "";
+  const attractionCards = Ae.attractionDays.length ? Ae.attractionDays.map((row) => `<article class="overview-attraction"><div class="cardhead"><div><strong>${Mt(row.attractions?.name)}</strong><small>${dr(row.attractions?.price)} · следующий №${row.next_ticket_no}</small></div><span class="status ${row.is_open ? "open" : "closed"}"><i class="dot"></i>${row.is_open ? "Открыт" : "Закрыт"}</span></div>${workerChips(row.attraction_id)}<button class="btn small ${row.is_open ? "red" : "green"}" data-action="toggle-attr" data-id="${row.attraction_id}" data-open="${!row.is_open}">${row.is_open ? "Закрыть" : "Открыть"}</button></article>`).join("") : '<div class="empty">Нет открытого рабочего дня</div>';
+  return `${Ya("Онлайн-обзор", "Данные обновляются автоматически · время Самары", `${notificationButton}${Ae.day ? '<button class="btn red" data-action="close-day">Закрыть день</button>' : '<button class="btn gold" data-action="open-day">Открыть день</button>'}`)}${refunds.length ? `<button class="refund-alert" data-page="tickets"><span class="bell">🔔</span><span><strong>${refunds.length} запросов на возврат</strong><small>Ожидают решения директора</small></span><b>Открыть →</b></button>` : ""}${tasks.length ? `<button class="task-alert" data-page="tasks"><span>✓</span><span><strong>${tasks.length} активных задач</strong><small>Проверьте выполнение сотрудниками</small></span><b>Открыть →</b></button>` : ""}<section class="grid"><div class="metric blue"><span>ПОСЕТИТЕЛИ</span><strong>${stats.visitors}</strong></div><div class="metric goldtone"><span>НАЧИСЛЕНО</span><strong>${dr(stats.gross)}</strong></div><div class="metric redtone"><span>ВОЗВРАТЫ</span><strong>${dr(stats.refund)}</strong></div><div class="metric greentone"><span>ЧИСТАЯ ВЫРУЧКА</span><strong>${dr(stats.net)}</strong></div></section><section class="split"><div class="card daycard"><div class="cardhead"><h3>Рабочий день</h3>${Ae.day ? '<span class="status open"><i class="dot"></i>Открыт</span>' : '<span class="status closed"><i class="dot"></i>Закрыт</span>'}</div>${Ae.day ? `<p>${Mt(Ae.day.label)} · открыт ${El(Ae.day.opened_at)}</p><span class="muted">Код дня</span><br><span class="code">${Mt(Ae.day.daily_code)}</span>` : '<div class="empty">Откройте новый рабочий день. Нумерация каждой игры начнётся с №1.</div>'}</div><div class="card"><div class="cardhead"><h3>Игры и сотрудники</h3><span class="muted">${currentAssignments().length} сотрудников</span></div><div class="overview-attractions">${attractionCards}</div></div></section>${Su(tickets.slice(0, 12), "Последние билеты")}`;
+}
+function Ty() {
+  const cards = Ae.attractions.map((row) => `<article class="attraction-card"><div class="cardhead"><div><h3>${Mt(row.name)}</h3><strong class="price">${dr(row.price)}</strong></div><span class="status ${row.active ? "open" : "closed"}"><i class="dot"></i>${row.active ? "Активен" : "Отключён"}</span></div><div class="section-label">Разрешённые продажи</div>${optionPills(row.id)}<div class="section-label">Сотрудники сегодня</div>${workerChips(row.id)}<div class="actions"><button class="btn ghost small" data-action="edit-attraction" data-id="${row.id}">Название и цена</button><button class="btn ghost small" data-action="sale-options" data-id="${row.id}">Способы продажи</button><button class="btn gold small" data-action="assign-worker" data-attraction="${row.id}">+ Сотрудник</button></div></article>`).join("");
+  return `${Ya("Аттракционы", "Для каждой игры отдельно: цена, способы продажи и работающие сотрудники.", '<button class="btn gold" data-action="edit-attraction">+ Добавить игру</button>')}<section class="attraction-board">${cards}</section>`;
+}
+function Ry() {
+  const rows = Ae.workers.map((row) => { const assignment = assignmentForWorker(row.id); return `<tr><td><strong>${Mt(row.display_name)}</strong><small class="block">${Mt(row.employee_code)}</small></td><td>${assignment ? `<span class="assignment-name">${Mt(assignment.attraction_name)}</span>` : '<span class="muted">Не назначен</span>'}</td><td><span class="status ${row.active ? "open" : "closed"}"><i class="dot"></i>${row.active ? "Активен" : "Отключён"}</span></td><td>${row.must_change_pin ? "Временный" : "Личный"}</td><td class="actions"><button class="btn gold small" data-action="assign-worker" data-worker="${row.id}">${assignment ? "Переместить" : "Назначить"}</button>${assignment ? `<button class="btn ghost small" data-action="unassign-worker" data-worker="${row.id}">Снять</button>` : ""}<button class="btn ghost small" data-action="reset-pin" data-id="${row.id}">Сбросить PIN</button><button class="btn ${row.active ? "red" : "green"} small" data-action="toggle-worker" data-id="${row.id}" data-active="${!row.active}">${row.active ? "Отключить" : "Включить"}</button></td></tr>`; }).join("");
+  return `${Ya("Сотрудники", "Директор назначает, перемещает и меняет сотрудников местами в течение дня.", `<button class="btn ghost" data-action="swap-workers" ${Ae.day ? "" : "disabled"}>Поменять местами</button><button class="btn gold" data-action="add-worker">+ Добавить</button>`)}<section class="card"><div class="tablewrap"><table class="table"><thead><tr><th>Сотрудник</th><th>Игра сегодня</th><th>Состояние</th><th>PIN</th><th></th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
+}
+function taskPage() {
+  const tasks = Ae.tasks.filter((row) => !Ae.day || Number(row.day_id) === Number(Ae.day.id));
+  const cards = tasks.length ? tasks.map((row) => { const total = Number(row.recipients_count || 0), done = Number(row.completed_count || 0), complete = total > 0 && done === total; return `<article class="task-item ${row.status === "CANCELLED" ? "cancelled" : complete ? "complete" : ""}"><div class="task-check">${complete ? "✓" : done}</div><div class="task-body"><div class="cardhead"><strong>${Mt(row.task_text)}</strong><span class="status ${row.status === "CANCELLED" ? "closed" : complete ? "open" : "waiting"}">${row.status === "CANCELLED" ? "Отменена" : complete ? "Выполнена" : `${done}/${total}`}</span></div><small>${Mt(row.recipient_names || "—")} · создана ${El(row.created_at)}</small><div class="task-progress"><i style="width:${total ? Math.round(done / total * 100) : 0}%"></i></div></div>${row.status === "ACTIVE" && !complete ? `<button class="btn red small" data-action="cancel-task" data-id="${row.id}">Отменить</button>` : ""}</article>`; }).join("") : '<div class="empty">Задач пока нет</div>';
+  return `${Ya("Задачи", "Директор отправляет задачу одному сотруднику, работникам игры или всей смене.", `<button class="btn gold" data-action="new-task" ${Ae.day ? "" : "disabled"}>+ Новая задача</button>`)}<section class="card task-list">${cards}</section>`;
+}
+function Oy() {
+  return `${Ya("\u0411\u0438\u043B\u0435\u0442\u044B", "\u0412\u043E\u0437\u0432\u0440\u0430\u0442 \u0432\u044B\u043F\u043E\u043B\u043D\u044F\u0435\u0442\u0441\u044F \u0442\u043E\u043B\u044C\u043A\u043E \u043F\u043E\u0441\u043B\u0435 \u0440\u0435\u0448\u0435\u043D\u0438\u044F \u0434\u0438\u0440\u0435\u043A\u0442\u043E\u0440\u0430.")} ${Iy()} ${Su(Ae.tickets, "\u0426\u0435\u043D\u0442\u0440\u0430\u043B\u044C\u043D\u044B\u0439 \u0436\u0443\u0440\u043D\u0430\u043B", true)}`;
+}
+function Iy() {
+  const r = bu();
+  return `<section class="card refund-card"><div class="cardhead"><h3>\u0417\u0430\u043F\u0440\u043E\u0441\u044B \u043D\u0430 \u0432\u043E\u0437\u0432\u0440\u0430\u0442</h3><span class="status ${r.length ? "waiting" : "open"}"><i class="dot"></i>${r.length ? r.length + " \u043E\u0436\u0438\u0434\u0430\u044E\u0442" : "\u041D\u0435\u0442 \u043D\u043E\u0432\u044B\u0445"}</span></div>${r.length ? `<div class="refund-list">${r.map((e) => `<article class="refund-item"><div><strong>${Mt(e.attraction_name)} \u2116${e.ticket_no} \u2022 ${dr(e.price)}</strong><small>${Mt(e.worker_name)} \u2022 ${El(e.created_at)}</small><p>${Mt(e.reason)}</p></div><div class="actions"><button class="btn red small" data-action="resolve-refund" data-id="${e.id}" data-approve="false">\u041E\u0442\u043A\u043B\u043E\u043D\u0438\u0442\u044C</button><button class="btn green small" data-action="resolve-refund" data-id="${e.id}" data-approve="true">\u041E\u0434\u043E\u0431\u0440\u0438\u0442\u044C</button></div></article>`).join("")}</div>` : '<div class="empty compact">\u0412\u0441\u0435 \u0437\u0430\u043F\u0440\u043E\u0441\u044B \u043E\u0431\u0440\u0430\u0431\u043E\u0442\u0430\u043D\u044B.</div>'}</section>`;
+}
+function Su(r, e, t = false) {
+  return `<section class="card"><div class="cardhead"><h3>${e}</h3><span class="muted">${r.length} \u0437\u0430\u043F\u0438\u0441\u0435\u0439</span></div><div class="tablewrap"><table class="table"><thead><tr><th>\u0411\u0438\u043B\u0435\u0442</th><th>\u0412\u0440\u0435\u043C\u044F \u0421\u0430\u043C\u0430\u0440\u044B</th><th>\u0421\u043E\u0442\u0440\u0443\u0434\u043D\u0438\u043A</th><th>\u041E\u043F\u043B\u0430\u0442\u0430</th><th>\u0421\u0443\u043C\u043C\u0430</th><th>\u0421\u0442\u0430\u0442\u0443\u0441</th>${t ? "<th></th>" : ""}</tr></thead><tbody>${r.length ? r.map((n) => `<tr><td><strong>${Mt(n.attraction_name)} \u2116${n.ticket_no}</strong>${n.free_reason ? `<br><small>${Mt(n.free_reason)}</small>` : ""}${n.offline ? '<br><span class="offline-tag">\u0441\u0438\u043D\u0445\u0440. \u043F\u043E\u0441\u043B\u0435 \u043E\u0444\u043B\u0430\u0439\u043D\u0430</span>' : ""}</td><td>${El(n.sold_at || n.created_at)}</td><td>${Mt(n.worker_name)}</td><td>${Zp(n.payment)}</td><td class="amount">${dr(n.price)}</td><td>${Qp(n.status)}</td>${t ? `<td>${n.status === "VALID" ? `<button class="btn red small" data-action="ticket-action" data-id="${n.id}" data-kind="CANCELLED">\u041E\u0442\u043C\u0435\u043D\u0430 \u043E\u0448\u0438\u0431\u043A\u0438</button>` : ""}</td>` : ""}</tr>`).join("") : '<tr><td colspan="7" class="empty">\u0411\u0438\u043B\u0435\u0442\u043E\u0432 \u043F\u043E\u043A\u0430 \u043D\u0435\u0442</td></tr>'}</tbody></table></div></section>`;
+}
+function jy() {
+  const dayId = Number(Ae.reportDayId || Ae.days[0]?.id), day = Ae.days.find((row) => Number(row.id) === dayId);
+  const attractionId = Number(Ae.reportAttractionId || Ae.attractions.find((row) => row.active)?.id || Ae.attractions[0]?.id);
+  const attraction = Ae.attractions.find((row) => Number(row.id) === attractionId);
+  const tickets = ticketsForAttraction(dayId, attractionId), stats = wu(tickets);
+  const tabs = Ae.attractions.map((row) => { const count = ticketsForAttraction(dayId, row.id).length; return `<button class="report-tab ${Number(row.id) === attractionId ? "active" : ""}" data-report-attraction="${row.id}"><strong>${Mt(row.name)}</strong><span>${count} билетов</span></button>`; }).join("");
+  const workers = currentAssignments(dayId).filter((row) => Number(row.attraction_id) === attractionId);
+  return `${Ya("Отчёты по играм", "Каждая игра имеет отдельный отчёт, список билетов и PDF.", '<button class="btn ghost" data-action="pdf-summary">Краткий PDF</button><button class="btn gold" data-action="pdf-detail">Подробный PDF</button>')}<div class="report-toolbar"><div class="field"><label>Рабочий день</label><select id="report-day">${Ae.days.map((row) => `<option value="${row.id}" ${Number(row.id) === dayId ? "selected" : ""}>${Mt(row.label)} · ${row.status === "OPEN" ? "открыт" : "закрыт"}</option>`).join("")}</select></div><div class="report-current"><span>Выбрана игра</span><strong>${Mt(attraction?.name || "—")}</strong></div></div><div class="report-tabs">${tabs}</div><section class="card report-heading"><div><span class="section-label">ОТЧЁТ ОТДЕЛЬНОЙ ИГРЫ</span><h2>${Mt(attraction?.name || "—")}</h2><p class="muted">${Mt(day?.label || "")} · сотрудники: ${workers.length ? Mt(workers.map((row) => row.worker_name).join(", ")) : "не назначены"}</p></div>${optionPills(attractionId)}</section><section class="grid"><div class="metric blue"><span>ПОСЕТИТЕЛИ</span><strong>${stats.visitors}</strong></div><div class="metric goldtone"><span>НАЧИСЛЕНО</span><strong>${dr(stats.gross)}</strong></div><div class="metric redtone"><span>ВОЗВРАТЫ</span><strong>${dr(stats.refund)}</strong></div><div class="metric greentone"><span>НЕТТО</span><strong>${dr(stats.net)}</strong></div></section>${Su(tickets, `Билеты · ${Mt(attraction?.name || "")}`)}`;
+}
+function Fy() {
+  document.querySelectorAll("[data-page]").forEach((e) => e.onclick = () => {
+    Ae.page = e.dataset.page, Wa();
+  }), document.querySelectorAll("[data-action]").forEach((e) => e.onclick = () => Dy(e.dataset));
+  const r = document.querySelector("#report-day");
+  r && (r.onchange = () => { Ae.reportDayId = Number(r.value); Wa(); });
+  document.querySelectorAll("[data-report-attraction]").forEach((button) => button.onclick = () => { Ae.reportAttractionId = Number(button.dataset.reportAttraction); Wa(); });
+}
+async function Dy(r) {
+  if (r.action === "logout") return await Ae.client.auth.signOut(), Ae.session = null, Ae.profile = null, Ja();
+  if (r.action === "enable-notifications") {
+    const e = await Notification.requestPermission();
+    return Er(e === "granted" ? "\u0423\u0432\u0435\u0434\u043E\u043C\u043B\u0435\u043D\u0438\u044F \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u044B" : "\u0423\u0432\u0435\u0434\u043E\u043C\u043B\u0435\u043D\u0438\u044F \u043D\u0435 \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u044B"), Wa();
+  }
+  if (r.action === "open-day") return By();
+  if (r.action === "close-day") return Uy();
+  if (r.action === "toggle-attr") return await Va("manager_set_attraction_open", { p_day_id: Ae.day.id, p_attraction_id: Number(r.id), p_open: r.open === "true" }), Jr();
+  if (r.action === "edit-attraction") return My(r.id);
+  if (r.action === "sale-options") return saleOptionsModal(Number(r.id));
+  if (r.action === "assign-worker") return assignWorkerModal(r.worker, r.attraction);
+  if (r.action === "unassign-worker" && await Va("manager_unassign_worker", { p_worker_id: r.worker })) return Jr();
+  if (r.action === "swap-workers") return swapWorkersModal();
+  if (r.action === "add-worker") return qy();
+  if (r.action === "new-task") return newTaskModal();
+  if (r.action === "cancel-task" && await Va("manager_cancel_task", { p_task_id: Number(r.id) })) return Jr();
+  if (r.action === "reset-pin") return $y(r.id);
+  if (r.action === "toggle-worker") return await Ae.client.from("profiles").update({ active: r.active === "true" }).eq("id", r.id), Jr();
+  if (r.action === "resolve-refund" && await Va("manager_resolve_refund_request", { p_request_id: Number(r.id), p_approve: r.approve === "true", p_note: null })) return Jr();
+  if (r.action === "ticket-action") return Hy(Number(r.id), r.kind);
+  if (r.action === "pdf-summary") return wd(false);
+  if (r.action === "pdf-detail") return wd(true);
+}
+async function Va(r, e) {
+  const { error: t } = await Ae.client.rpc(r, e);
+  return t ? (Er("\u041E\u0448\u0438\u0431\u043A\u0430: " + t.message), false) : (Er("\u0413\u043E\u0442\u043E\u0432\u043E"), true);
+}
+function Ys(r) {
+  const e = document.createElement("div");
+  return e.className = "modalback", e.innerHTML = `<div class="modal">${r}</div>`, e.onclick = (t) => {
+    t.target === e && e.remove();
+  }, document.body.appendChild(e), e;
+}
+function By() {
+  const r = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1e6).padStart(6, "0"), e = Ys(`<h3>\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0440\u0430\u0431\u043E\u0447\u0438\u0439 \u0434\u0435\u043D\u044C?</h3><p>\u041A\u043E\u0434 \u0434\u043B\u044F \u0441\u043E\u0442\u0440\u0443\u0434\u043D\u0438\u043A\u043E\u0432:</p><div class="code">${r}</div><p class="notice">\u041D\u0443\u043C\u0435\u0440\u0430\u0446\u0438\u044F \u043A\u0430\u0436\u0434\u043E\u0433\u043E \u0430\u0442\u0442\u0440\u0430\u043A\u0446\u0438\u043E\u043D\u0430 \u043D\u0430\u0447\u043D\u0451\u0442\u0441\u044F \u0441 \u21161.</p><div class="actions"><button class="btn gold" id="ok">\u041E\u0442\u043A\u0440\u044B\u0442\u044C</button><button class="btn ghost" id="cancel">\u041E\u0442\u043C\u0435\u043D\u0430</button></div>`);
+  e.querySelector("#cancel").onclick = () => e.remove(), e.querySelector("#ok").onclick = async () => {
+    await Va("manager_open_day", { p_daily_code: r }) && (e.remove(), Jr());
+  };
+}
+function Uy() {
+  const r = Ys('<h3>\u0417\u0430\u043A\u0440\u044B\u0442\u044C \u0440\u0430\u0431\u043E\u0447\u0438\u0439 \u0434\u0435\u043D\u044C?</h3><p>\u0412\u0441\u0435 \u043E\u0442\u043A\u0440\u044B\u0442\u044B\u0435 \u0430\u0442\u0442\u0440\u0430\u043A\u0446\u0438\u043E\u043D\u044B \u0438 \u0441\u043C\u0435\u043D\u044B \u0431\u0443\u0434\u0443\u0442 \u0437\u0430\u043A\u0440\u044B\u0442\u044B.</p><div class="actions"><button class="btn red" id="ok">\u0417\u0430\u043A\u0440\u044B\u0442\u044C</button><button class="btn ghost" id="cancel">\u041E\u0442\u043C\u0435\u043D\u0430</button></div>');
+  r.querySelector("#cancel").onclick = () => r.remove(), r.querySelector("#ok").onclick = async () => {
+    await Va("manager_close_day", { p_day_id: Ae.day.id }) && (r.remove(), Jr());
+  };
+}
+function My(r) {
+  const e = Ae.attractions.find((n) => String(n.id) === String(r)), t = Ys(`<form id="attr-form"><h3>${e ? "\u0418\u0437\u043C\u0435\u043D\u0438\u0442\u044C" : "\u041D\u043E\u0432\u044B\u0439"} \u0430\u0442\u0442\u0440\u0430\u043A\u0446\u0438\u043E\u043D</h3><div class="field"><label>\u041D\u0430\u0437\u0432\u0430\u043D\u0438\u0435</label><input name="name" value="${Mt(e?.name || "")}" required></div><div class="field"><label>\u0426\u0435\u043D\u0430, \u20BD</label><input name="price" type="number" min="0" value="${e?.price ?? ""}" required></div><label><input name="active" type="checkbox" ${e?.active !== false ? "checked" : ""}> \u0410\u043A\u0442\u0438\u0432\u0435\u043D</label><div class="actions" style="margin-top:18px"><button class="btn gold">\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C</button><button class="btn ghost" type="button" id="cancel">\u041E\u0442\u043C\u0435\u043D\u0430</button></div></form>`);
+  t.querySelector("#cancel").onclick = () => t.remove(), t.querySelector("form").onsubmit = async (n) => {
+    n.preventDefault();
+    const i = { name: n.target.name.value.trim(), price: Number(n.target.price.value), active: n.target.active.checked, updated_at: (/* @__PURE__ */ new Date()).toISOString() }, s = e ? Ae.client.from("attractions").update(i).eq("id", e.id) : Ae.client.from("attractions").insert(i), { error: a } = await s;
+    if (a) return Er(a.message);
+    t.remove(), await Jr();
+  };
+}
+function saleOptionsModal(attractionId) {
+  const attraction = Ae.attractions.find((row) => Number(row.id) === attractionId), options = optionsForAttraction(attractionId);
+  const fields = [["cash", "Наличные", options.allow_cash], ["card", "Карта", options.allow_card], ["transfer", "Перевод", options.allow_transfer], ["child", "Ребёнок бесплатно", options.allow_child], ["free", "Бесплатный вход с причиной", options.allow_free]];
+  const modal = Ys(`<form><h3>Способы продажи · ${Mt(attraction?.name)}</h3><p class="muted">Сотрудник увидит только включённые кнопки. Сервер также запретит остальные варианты.</p><div class="check-grid">${fields.map(([name, label, checked]) => `<label class="check-card"><input type="checkbox" name="${name}" ${checked ? "checked" : ""}><span>${label}</span></label>`).join("")}</div><div class="actions"><button class="btn gold">Сохранить</button><button class="btn ghost" type="button" id="cancel">Отмена</button></div></form>`);
+  modal.querySelector("#cancel").onclick = () => modal.remove();
+  modal.querySelector("form").onsubmit = async (event) => {
+    event.preventDefault();
+    const form = event.target;
+    const params = { p_attraction_id: attractionId, p_allow_cash: form.cash.checked, p_allow_card: form.card.checked, p_allow_transfer: form.transfer.checked, p_allow_child: form.child.checked, p_allow_free: form.free.checked };
+    if (await Va("manager_set_attraction_sale_options", params)) { modal.remove(); Jr(); }
+  };
+}
+function assignWorkerModal(workerId, attractionId) {
+  if (!Ae.day) return Er("Сначала откройте рабочий день");
+  const availableWorkers = Ae.workers.filter((row) => row.active);
+  const availableAttractions = Ae.attractions.filter((row) => row.active);
+  const modal = Ys(`<form><h3>Назначить или переместить сотрудника</h3><div class="field"><label>Сотрудник</label><select name="worker" required><option value="">Выберите</option>${availableWorkers.map((row) => `<option value="${row.id}" ${String(row.id) === String(workerId) ? "selected" : ""}>${Mt(row.display_name)} · ${Mt(row.employee_code)}</option>`).join("")}</select></div><div class="field"><label>Игра</label><select name="attraction" required><option value="">Выберите</option>${availableAttractions.map((row) => `<option value="${row.id}" ${Number(row.id) === Number(attractionId) ? "selected" : ""}>${Mt(row.name)}</option>`).join("")}</select></div><p class="notice">Если сотрудник уже работает, приложение сразу покажет ему новую игру после подключения к интернету.</p><div class="actions"><button class="btn gold">Применить</button><button class="btn ghost" type="button" id="cancel">Отмена</button></div></form>`);
+  modal.querySelector("#cancel").onclick = () => modal.remove();
+  modal.querySelector("form").onsubmit = async (event) => {
+    event.preventDefault();
+    if (await Va("manager_assign_worker", { p_worker_id: event.target.worker.value, p_attraction_id: Number(event.target.attraction.value) })) { modal.remove(); Jr(); }
+  };
+}
+function swapWorkersModal() {
+  if (!Ae.day) return Er("Сначала откройте рабочий день");
+  const assigned = currentAssignments();
+  if (assigned.length < 2) return Er("Нужно назначить минимум двух сотрудников");
+  const options = assigned.map((row) => `<option value="${row.worker_id}">${Mt(row.worker_name)} · ${Mt(row.attraction_name)}</option>`).join("");
+  const modal = Ys(`<form><h3>Поменять сотрудников местами</h3><div class="field"><label>Первый сотрудник</label><select name="workerA">${options}</select></div><div class="field"><label>Второй сотрудник</label><select name="workerB">${options}</select></div><p class="notice">Оба сотрудника перейдут на игры друг друга. История перемещения сохранится.</p><div class="actions"><button class="btn gold">Поменять</button><button class="btn ghost" type="button" id="cancel">Отмена</button></div></form>`);
+  modal.querySelector("#cancel").onclick = () => modal.remove();
+  modal.querySelector("form").onsubmit = async (event) => {
+    event.preventDefault();
+    const a = event.target.workerA.value, b = event.target.workerB.value;
+    if (a === b) return Er("Выберите двух разных сотрудников");
+    if (await Va("manager_swap_workers", { p_worker_a: a, p_worker_b: b })) { modal.remove(); Jr(); }
+  };
+}
+function newTaskModal() {
+  if (!Ae.day) return Er("Сначала откройте рабочий день");
+  const modal = Ys(`<form><h3>Новая задача</h3><div class="field"><label>Задача</label><textarea name="task" rows="4" maxlength="500" placeholder="Что нужно сделать?" required></textarea></div><div class="field"><label>Кому отправить</label><select name="target"><option value="WORKER">Одному сотруднику</option><option value="ATTRACTION">Всем сотрудникам игры</option><option value="ALL">Всем сотрудникам смены</option></select></div><div class="field target-worker"><label>Сотрудник</label><select name="worker">${Ae.workers.filter((row) => row.active).map((row) => `<option value="${row.id}">${Mt(row.display_name)}</option>`).join("")}</select></div><div class="field target-attraction" hidden><label>Игра</label><select name="attraction">${Ae.attractions.filter((row) => row.active).map((row) => `<option value="${row.id}">${Mt(row.name)}</option>`).join("")}</select></div><div class="actions"><button class="btn gold">Отправить задачу</button><button class="btn ghost" type="button" id="cancel">Отмена</button></div></form>`);
+  const form = modal.querySelector("form"), workerField = modal.querySelector(".target-worker"), attractionField = modal.querySelector(".target-attraction");
+  form.target.onchange = () => { workerField.hidden = form.target.value !== "WORKER"; attractionField.hidden = form.target.value !== "ATTRACTION"; };
+  modal.querySelector("#cancel").onclick = () => modal.remove();
+  form.onsubmit = async (event) => {
+    event.preventDefault();
+    const type = form.target.value;
+    const params = { p_task_text: form.task.value.trim(), p_target_type: type, p_worker_id: type === "WORKER" ? form.worker.value : null, p_attraction_id: type === "ATTRACTION" ? Number(form.attraction.value) : null, p_due_at: null };
+    if (await Va("manager_create_task", params)) { modal.remove(); Jr(); }
+  };
+}
+function qy() {
+  const r = Ys('<form><h3>\u041D\u043E\u0432\u044B\u0439 \u0441\u043E\u0442\u0440\u0443\u0434\u043D\u0438\u043A</h3><div class="field"><label>\u0418\u043C\u044F</label><input name="name" required minlength="2"></div><div class="actions"><button class="btn gold">\u0421\u043E\u0437\u0434\u0430\u0442\u044C</button><button class="btn ghost" type="button" id="cancel">\u041E\u0442\u043C\u0435\u043D\u0430</button></div></form>');
+  r.querySelector("#cancel").onclick = () => r.remove(), r.querySelector("form").onsubmit = async (e) => {
+    e.preventDefault();
+    const { data: t, error: n } = await Ae.client.functions.invoke("admin-worker", { body: { action: "create", name: e.target.name.value.trim() } });
+    if (n || t?.error) return Er(t?.error || n.message);
+    r.innerHTML = `<div class="modal"><h3>\u0414\u0430\u043D\u043D\u044B\u0435 \u0441\u043E\u0442\u0440\u0443\u0434\u043D\u0438\u043A\u0430</h3><div class="notice"><strong>${Mt(t.name)}</strong><br>\u041D\u043E\u043C\u0435\u0440: <b>${Mt(t.employee_code)}</b><br>\u0412\u0440\u0435\u043C\u0435\u043D\u043D\u044B\u0439 PIN: <b>${Mt(t.temporary_pin)}</b></div><p>\u041F\u0435\u0440\u0435\u0434\u0430\u0439\u0442\u0435 \u0434\u0430\u043D\u043D\u044B\u0435 \u0442\u043E\u043B\u044C\u043A\u043E \u044D\u0442\u043E\u043C\u0443 \u0441\u043E\u0442\u0440\u0443\u0434\u043D\u0438\u043A\u0443. PIN \u043D\u0443\u0436\u043D\u043E \u0438\u0437\u043C\u0435\u043D\u0438\u0442\u044C \u043F\u0440\u0438 \u043F\u0435\u0440\u0432\u043E\u043C \u0432\u0445\u043E\u0434\u0435.</p><button class="btn gold" id="done">\u0413\u043E\u0442\u043E\u0432\u043E</button></div>`, r.querySelector("#done").onclick = () => {
+      r.remove(), Jr();
+    };
+  };
+}
+async function $y(r) {
+  const { data: e, error: t } = await Ae.client.functions.invoke("admin-worker", { body: { action: "reset_pin", worker_id: r } });
+  if (t || e?.error) return Er(e?.error || t.message);
+  const n = Ys(`<h3>\u041D\u043E\u0432\u044B\u0439 \u0432\u0440\u0435\u043C\u0435\u043D\u043D\u044B\u0439 PIN</h3><div class="notice">${Mt(e.employee_code)}<br><b class="code">${Mt(e.temporary_pin)}</b></div><button class="btn gold" id="done">\u0413\u043E\u0442\u043E\u0432\u043E</button>`);
+  n.querySelector("#done").onclick = () => {
+    n.remove(), Jr();
+  };
+}
+function Hy(r, e) {
+  const t = Ae.tickets.find((i) => Number(i.id) === r), n = Ys(`<form><h3>${e === "REFUNDED" ? "\u041E\u0444\u043E\u0440\u043C\u0438\u0442\u044C \u0432\u043E\u0437\u0432\u0440\u0430\u0442" : "\u041E\u0442\u043C\u0435\u043D\u0438\u0442\u044C \u0431\u0438\u043B\u0435\u0442"}</h3><p>${Mt(t.attraction_name)} \u2116${t.ticket_no} \u2022 ${dr(t.price)}</p><div class="field"><label>\u041F\u0440\u0438\u0447\u0438\u043D\u0430</label><input name="reason" required minlength="3"></div><div class="actions"><button class="btn ${e === "REFUNDED" ? "gold" : "red"}">\u041F\u043E\u0434\u0442\u0432\u0435\u0440\u0434\u0438\u0442\u044C</button><button class="btn ghost" type="button" id="cancel">\u041E\u0442\u043C\u0435\u043D\u0430</button></div></form>`);
+  n.querySelector("#cancel").onclick = () => n.remove(), n.querySelector("form").onsubmit = async (i) => {
+    i.preventDefault(), await Va("manager_action_ticket", { p_ticket_id: r, p_action: e, p_reason: i.target.reason.value.trim() }) && (n.remove(), Jr());
+  };
+}
+function wd(r){const dayId=Number(Ae.reportDayId||document.querySelector("#report-day")?.value||Ae.days[0]?.id),day=Ae.days.find(row=>Number(row.id)===dayId),attractionId=Number(Ae.reportAttractionId||Ae.attractions[0]?.id),attraction=Ae.attractions.find(row=>Number(row.id)===attractionId),tickets=ticketsForAttraction(dayId,attractionId),stats=wu(tickets);if(!day)return Er("Выберите рабочий день");const popup=window.open("","_blank");if(!popup)return Er("Разрешите всплывающие окна");const rows=tickets.map(ticket=>`<tr><td>№${ticket.ticket_no}</td><td>${El(ticket.sold_at||ticket.created_at)}</td><td>${Mt(ticket.worker_name)}</td><td>${Zp(ticket.payment)}</td><td>${dr(ticket.price)}</td><td>${Qp(ticket.status)}</td></tr>`).join("");popup.document.write(`<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>Отчёт — ${Mt(attraction?.name||"")}</title><style>body{font-family:Arial,sans-serif;color:#172238;padding:28px}h1{margin:0 0 8px}p{color:#667085}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:20px 0}.stats div{border:1px solid #ddd;border-radius:10px;padding:12px}.stats b{display:block;font-size:20px;margin-top:5px}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #ddd;padding:7px;text-align:left}th{background:#f1f4f8}@media print{button{display:none}}</style></head><body><button onclick="print()">Печать / Сохранить PDF</button><h1>${r?"Подробный":"Краткий"} отчёт · ${Mt(attraction?.name||"")}</h1><p>Рабочий день: ${Mt(day.label)} · время Самары</p><section class="stats"><div>Посетители<b>${stats.visitors}</b></div><div>Начислено<b>${dr(stats.gross)}</b></div><div>Возвраты<b>${dr(stats.refund)}</b></div><div>Чистая выручка<b>${dr(stats.net)}</b></div></section>${r?`<table><thead><tr><th>Билет</th><th>Время</th><th>Сотрудник</th><th>Оплата</th><th>Сумма</th><th>Статус</th></tr></thead><tbody>${rows}</tbody></table>`:""}<script>setTimeout(()=>print(),350)<\/script></body></html>`);popup.document.close()} async function Wy() {
+  const r = Ay();
+  Ae.client = G2(r.url, r.key, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
+  const e = location.hash.includes("type=recovery") || location.search.includes("type=recovery");
+  Ae.client.auth.onAuthStateChange((n, i) => {
+    Ae.session = i, n === "PASSWORD_RECOVERY" && (Ae.recovering = true, vd());
+  });
+  const { data: t } = await Ae.client.auth.getSession();
+  if (Ae.session = t.session, e) return vd();
+  Ae.session && !Ae.recovering ? await e0() : Ae.recovering || Ja();
+}
+Wy();
+</script>
+</body>
+</html>
