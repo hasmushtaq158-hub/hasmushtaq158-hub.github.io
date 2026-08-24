@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#172238">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Билеты парка">
+  <link rel="manifest" href="./worker-manifest.webmanifest">
+  <title>Билеты парка — сотрудник</title>
+  <style>
+    :root{font-family:Inter,Manrope,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#172238;background:#f5f7fb;font-synthesis:none}
+    *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#f5f7fb}body{min-width:0;overflow-x:hidden}
+    button,input,textarea{font:inherit}button{cursor:pointer}.shell{width:100%;max-width:620px;margin:0 auto;padding:18px 16px calc(34px + env(safe-area-inset-bottom))}
+    .brand{display:flex;align-items:center;gap:12px;margin-bottom:18px}.logo{display:grid;place-items:center;width:48px;height:48px;border-radius:17px;background:linear-gradient(145deg,#f5b927,#e69d14);font-size:24px;box-shadow:0 8px 22px #dea82140}.brand strong{font-size:21px}.brand small{display:block;color:#718096;margin-top:2px}
+    .hero{position:relative;overflow:hidden;padding:22px;border-radius:26px;color:#fff;background:linear-gradient(145deg,#172238,#274067);box-shadow:0 16px 38px #17223829}.hero:after{content:"";position:absolute;right:-34px;top:-44px;width:130px;height:130px;border-radius:50%;background:#ffffff14}.hero h1{position:relative;margin:0;font-size:30px;line-height:1.1}.hero p{position:relative;margin:8px 0 0;color:#dbe4f3}.status{display:inline-flex;align-items:center;gap:6px;margin-top:13px;padding:7px 11px;border-radius:999px;background:#1d9369;font-size:13px;font-weight:800}.status.offline{background:#bd3d44}
+    .card{margin-top:14px;padding:18px;border:1px solid #e6eaf1;border-radius:23px;background:#fff;box-shadow:0 8px 25px #1722380d}.card h2{margin:0 0 14px;font-size:20px}.muted{color:#718096}.notice{padding:12px 14px;border-radius:15px;background:#eef3fb;color:#53647c;font-size:14px;line-height:1.45}.warning{background:#fff7db;color:#765912}
+    label{display:block;margin:12px 0 6px;font-size:13px;font-weight:800;color:#5e6e83}.field{width:100%;min-height:56px;padding:0 15px;border:1px solid #dfe5ee;border-radius:16px;background:#f4f7fb;color:#172238;font-size:17px;outline:none}.field:focus{border-color:#e8aa1d;box-shadow:0 0 0 4px #e8aa1d24}.btn{width:100%;min-height:54px;margin-top:11px;padding:10px 14px;border:0;border-radius:17px;background:#172238;color:#fff;font-weight:850;font-size:16px;box-shadow:0 6px 15px #1722381c}.btn:disabled{opacity:.55;cursor:wait}.btn.gold{background:#efad1f;color:#172238}.btn.green{background:#1d9369}.btn.red{background:#c53b42}.btn.gray{background:#6c7c91}.btn.light{border:1px solid #dfe5ee;background:#f5f7fb;color:#172238;box-shadow:none}.btn.small{min-height:44px;margin-top:8px;font-size:14px}
+    .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}.metric{min-width:0;padding:15px;border-radius:18px;background:#fff;border:1px solid #e6eaf1}.metric span{display:block;color:#718096;font-size:11px;font-weight:850}.metric strong{display:block;margin-top:6px;font-size:21px;overflow-wrap:anywhere}.metric.wide{grid-column:1/-1}.price{font-size:34px!important}.section-title{margin:22px 2px 8px;font-size:20px}
+    .task{margin-top:9px;padding:14px;border-radius:17px;background:#edf3fd}.task.done{background:#eaf7f0;color:#197451}.task p{margin:0;font-weight:750;line-height:1.35}
+    .sale{min-height:64px;font-size:18px}.sale.cash{background:#208d64}.sale.cardpay{background:#172238}.sale.transfer{background:#294a79}.sale.child{background:#efad1f;color:#172238}.sale.free{background:#6c7c91}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.ticket{padding:15px;border-radius:18px;background:#fff;border:1px solid #e6eaf1;margin-top:10px}.ticket strong{font-size:17px}.ticket small{display:block;margin-top:6px;color:#718096;line-height:1.4}.tag{display:inline-flex;margin-top:8px;padding:5px 9px;border-radius:999px;background:#edf3fd;color:#3b5e8f;font-size:12px;font-weight:800}.tag.wait{background:#fff2ce;color:#7b5b00}.tag.good{background:#e6f6ed;color:#197451}.tag.bad{background:#ffe8ea;color:#9f2e35}
+    .empty{text-align:center;padding:20px;color:#718096}.toast{position:fixed;z-index:1000;left:16px;right:16px;bottom:calc(18px + env(safe-area-inset-bottom));max-width:580px;margin:auto;padding:14px 16px;border-radius:17px;background:#172238;color:#fff;text-align:center;font-weight:750;box-shadow:0 14px 38px #0004;transform:translateY(140%);transition:.25s}.toast.show{transform:translateY(0)}
+    .spinner{width:34px;height:34px;margin:24px auto;border:4px solid #dfe5ee;border-top-color:#efad1f;border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+    @media(max-width:360px){.shell{padding-left:11px;padding-right:11px}.hero h1{font-size:26px}.row{grid-template-columns:1fr}.stats{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <main id="app"><div class="shell"><div class="spinner"></div></div></main>
+  <div id="toast" class="toast" role="status"></div>
+  <script>
+  (()=>{
+    "use strict";
+    const BASE="https://bzhawqxmqwazfxsvsxdt.supabase.co";
+    const KEY="sb_publishable_gvnXtz1s_ZCA6WnsScbYiA_U1NbtJmN";
+    const K={session:"park_worker_web_session_v1",profile:"park_worker_web_profile_v1",code:"park_worker_web_code_v1",state:"park_worker_web_state_v1",tickets:"park_worker_web_ticket_queue_v1",tasks:"park_worker_web_task_queue_v1",seen:"park_worker_web_seen_tasks_v1"};
+    const S={session:null,profile:null,code:"",state:null,timer:null,busy:false};
+    const $=(s,r=document)=>r.querySelector(s), app=$("#app"), esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+    const load=(k,f=null)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):f}catch{return f}},save=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+    function toast(message){const el=$("#toast");el.textContent=message;el.classList.add("show");clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove("show"),3100)}
+    function shell(body){app.innerHTML=`<div class="shell"><div class="brand"><div class="logo">🎟️</div><div><strong>Билеты парка</strong><small>Вход сотрудника</small></div></div>${body}</div>`}
+    function errText(e){const m=String(e?.message||e||"Ошибка");if(/invalid login|invalid_credentials/i.test(m))return "Неверный номер сотрудника или PIN";if(/failed to fetch|network|load failed/i.test(m))return "Нет связи с интернетом";return m}
+    function networkError(e){return !navigator.onLine||e?.network||/failed to fetch|network|load failed/i.test(String(e?.message||e))}
+    async function raw(method,path,body=null,auth=true,representation=true,retry=true){
+      const headers={apikey:KEY,"Content-Type":"application/json","Accept":"application/json"};
+      if(auth&&S.session?.access_token)headers.Authorization=`Bearer ${S.session.access_token}`;
+      if(representation)headers.Prefer="return=representation";
+      let response;
+      try{response=await fetch(BASE+path,{method,headers,body:body==null?undefined:JSON.stringify(body)})}catch(e){e.network=true;throw e}
+      const text=await response.text();let data=null;try{data=text?JSON.parse(text):{}}catch{data=text}
+      if(response.status===401&&auth&&retry&&await refresh())return raw(method,path,body,auth,representation,false);
+      if(!response.ok){const e=new Error(data?.message||data?.error_description||data?.error||text||`HTTP ${response.status}`);e.status=response.status;throw e}
+      return data;
+    }
+    async function refresh(){
+      if(!S.session?.refresh_token)return false;
+      try{const data=await raw("POST","/auth/v1/token?grant_type=refresh_token",{refresh_token:S.session.refresh_token},false,false,false);setSession(data);return true}catch{return false}
+    }
+    function setSession(v){S.session=v;save(K.session,v)}
+    const get=path=>raw("GET","/rest/v1/"+path),rpc=(name,args={})=>raw("POST","/rest/v1/rpc/"+name,args);
+    async function profile(){
+      const id=S.session?.user?.id;if(!id)throw new Error("Сессия не найдена");
+      const rows=await get(`profiles?select=id,employee_code,display_name,role,active,must_change_pin&id=eq.${encodeURIComponent(id)}&limit=1`);
+      const p=rows?.[0];if(!p)throw new Error("Профиль не найден");if(p.role!=="worker")throw new Error("Это не учётная запись сотрудника");if(!p.active)throw new Error("Учётная запись отключена");
+      S.profile=p;save(K.profile,p);return p;
+    }
+    function stopPoll(){clearTimeout(S.timer);S.timer=null}
+    async function logout(){stopPoll();S.session=null;S.profile=null;S.state=null;localStorage.removeItem(K.session);localStorage.removeItem(K.profile);renderLogin()}
+    function renderLogin(){
+      stopPoll();shell(`<section class="hero"><h1>Вход сотрудника</h1><p>Только ваш личный номер и PIN</p></section><section class="card"><form id="login"><label>Номер сотрудника</label><input class="field" name="code" placeholder="Например, EMP-0001" autocapitalize="characters" autocomplete="username" required><label>Личный PIN</label><input class="field" name="pin" type="password" inputmode="numeric" autocomplete="current-password" minlength="4" required><button class="btn gold">Войти</button></form></section><div class="notice warning" style="margin-top:14px">Страница директора и эта страница независимы. Сотрудник не получает доступ к данным других работников.</div>`);
+      $("#login").onsubmit=async e=>{e.preventDefault();const b=$("button",e.target);b.disabled=true;try{const code=e.target.code.value.trim().toLowerCase(),pin=e.target.pin.value.trim();const data=await raw("POST","/auth/v1/token?grant_type=password",{email:`${code}@workers.park.internal`,password:pin},false,false);setSession(data);await profile();S.profile.must_change_pin?renderPin():renderCode()}catch(x){toast(errText(x));b.disabled=false}};
+    }
+    function renderPin(){
+      shell(`<section class="hero"><h1>Новый личный PIN</h1><p>Создайте 6 цифр, которые знаете только вы</p></section><section class="card"><form id="pin"><label>Новый PIN</label><input class="field" name="a" type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required><label>Повторите PIN</label><input class="field" name="b" type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required><button class="btn green">Сохранить PIN</button></form></section>`);
+      $("#pin").onsubmit=async e=>{e.preventDefault();if(e.target.a.value!==e.target.b.value)return toast("PIN не совпадает");const b=$("button",e.target);b.disabled=true;try{await raw("PUT","/auth/v1/user",{password:e.target.a.value});await rpc("complete_pin_change");S.profile.must_change_pin=false;save(K.profile,S.profile);renderCode()}catch(x){toast(errText(x));b.disabled=false}};
+    }
+    function renderCode(){
+      stopPoll();const remembered=load(K.code,"");shell(`<section class="hero"><h1>Начало смены</h1><p>Здравствуйте, ${esc(S.profile?.display_name||"Сотрудник")}</p></section><section class="card"><form id="day"><h2>Код рабочего дня</h2><input class="field" name="code" value="${esc(remembered)}" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="6 цифр" required><button class="btn gold">Получить назначение директора</button></form></section><div class="notice" style="margin-top:14px">Аттракцион назначает директор. При перемещении новая игра появится автоматически.</div><button id="logout" class="btn gray">Выйти</button>`);
+      $("#logout").onclick=logout;$("#day").onsubmit=async e=>{e.preventDefault();const b=$("button",e.target);b.disabled=true;S.code=e.target.code.value.trim();save(K.code,S.code);try{S.state=await loadState(true);save(K.state,S.state);renderHome();await syncPending()}catch(x){const cached=load(K.state);if(networkError(x)&&cached&&String(load(K.code,""))===S.code){S.state=cached;renderHome();toast("Офлайн • последнее назначение")}else{toast(errText(x));b.disabled=false}}};
+    }
+    async function loadState(begin){
+      const open=await rpc("worker_open_attractions",{p_daily_code:S.code});if(!open?.length)throw new Error("Нет открытых аттракционов");const dayId=Number(open[0].day_id);
+      const a=await get(`worker_assignments?select=day_id,attraction_id,active&day_id=eq.${dayId}&worker_id=eq.${encodeURIComponent(S.profile.id)}&active=eq.true&limit=1`);if(!a?.length)throw new Error("Директор ещё не назначил вам аттракцион");
+      const attractionId=Number(a[0].attraction_id),attraction=open.find(x=>Number(x.attraction_id)===attractionId);if(!attraction)throw new Error("Назначенный аттракцион пока не открыт");if(begin)await rpc("begin_shift",{p_attraction_id:attractionId,p_daily_code:S.code});
+      const [options,tasks,stats]=await Promise.all([get(`attraction_sale_options?select=allow_cash,allow_card,allow_transfer,allow_child,allow_free&attraction_id=eq.${attractionId}&limit=1`),get(`worker_task_details?select=id,day_id,task_text,target_type,target_attraction_id,due_at,status,created_at,completed_at&day_id=eq.${dayId}&status=eq.ACTIVE&order=created_at.desc`),rpc("worker_my_stats")]);
+      notifyTasks(tasks||[]);return{dayId,attractionId,attractionName:attraction.attraction_name||"Аттракцион",price:Number(attraction.price||0),options:options?.[0]||{allow_cash:true,allow_card:true,allow_transfer:true,allow_child:true,allow_free:true},tasks:tasks||[],stats:stats?.[0]||{},updatedAt:new Date().toISOString()};
+    }
+    function rub(v){return `${Number(v||0).toLocaleString("ru-RU")} ₽`}
+    function connection(){return navigator.onLine?'<span class="status">● Онлайн</span>':'<span class="status offline">● Офлайн · сохраняем</span>'}
+    function renderHome(){
+      stopPoll();const d=S.state,o=d.options||{},st=d.stats||{},pending=load(K.tickets,[]).length;
+      const tasks=(d.tasks||[]).map(t=>`<div class="task ${t.completed_at?'done':''}"><p>${t.completed_at?'✓':'•'} ${esc(t.task_text)}</p>${t.completed_at?'':`<button class="btn green small task-done" data-id="${t.id}">Выполнено ✓</button>`}</div>`).join("")||'<div class="empty">Новых задач нет</div>';
+      const sale=[o.allow_cash!==false&&['Наличные','CASH','cash'],o.allow_card!==false&&['Карта','CARD','cardpay'],o.allow_transfer!==false&&['Перевод','TRANSFER','transfer'],o.allow_child!==false&&['Ребёнок · бесплатно','CHILD','child'],o.allow_free!==false&&['Бесплатный вход · причина','FREE','free']].filter(Boolean).map(x=>`<button class="btn sale ${x[2]}" data-pay="${x[1]}">${x[0]}</button>`).join("");
+      shell(`<section class="hero"><h1>${esc(d.attractionName)}</h1><p>Назначено директором · ${esc(S.profile.display_name)}</p>${connection()}</section><section class="stats"><div class="metric wide"><span>ЦЕНА БИЛЕТА</span><strong class="price">${rub(d.price)}</strong></div><div class="metric"><span>МОИ БИЛЕТЫ</span><strong>${Number(st.ticket_count||0)}</strong></div><div class="metric"><span>ЖДУТ ОТПРАВКИ</span><strong>${pending}</strong></div><div class="metric"><span>НАЛИЧНЫЕ</span><strong>${rub(st.cash_amount)}</strong></div><div class="metric"><span>КАРТА</span><strong>${rub(st.card_amount)}</strong></div><div class="metric"><span>ПЕРЕВОД</span><strong>${rub(st.transfer_amount)}</strong></div><div class="metric"><span>ДЕТИ / БЕСПЛАТНО</span><strong>${Number(st.child_count||0)} / ${Number(st.free_count||0)}</strong></div></section><h2 class="section-title">Задачи от директора</h2><section class="card" style="margin-top:0">${tasks}</section><h2 class="section-title">Продажа билета</h2>${sale||'<div class="notice warning">Директор пока не разрешил способы продажи для этой игры.</div>'}<div class="row"><button id="tickets" class="btn light">Мои билеты</button><button id="sync" class="btn light">Синхронизировать</button></div><button id="finish" class="btn red">Закончить смену</button><button id="notify" class="btn gray small">Включить уведомления</button>`);
+      document.querySelectorAll("[data-pay]").forEach(b=>b.onclick=()=>sell(b.dataset.pay,b));document.querySelectorAll(".task-done").forEach(b=>b.onclick=()=>completeTask(Number(b.dataset.id),b));$("#tickets").onclick=renderTickets;$("#sync").onclick=()=>syncPending(true);$("#finish").onclick=()=>confirm("Закончить смену?")&&logout();$("#notify").onclick=enableNotifications;S.timer=setTimeout(poll,15000);
+    }
+    async function poll(){
+      if(!S.state)return;try{const next=await loadState(false),moved=Number(next.attractionId)!==Number(S.state.attractionId);S.state=next;save(K.state,next);if(moved){notify("Новое назначение",`Директор перевёл вас: ${next.attractionName}`);toast("Директор изменил аттракцион")}renderHome();await syncPending()}catch{S.timer=setTimeout(poll,15000)}
+    }
+    function uuid(){return crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random().toString(16).slice(2)}`}
+    async function sell(payment,button){let reason=null;if(payment==="FREE"){reason=prompt("Причина бесплатного входа:","")?.trim();if(!reason||reason.length<2)return toast("Укажите причину")}button.disabled=true;const tx=uuid(),soldAt=new Date().toISOString();try{const rows=await rpc("sell_ticket",{p_payment:payment,p_free_reason:reason,p_client_tx_id:tx});toast(`Билет ${rows?.[0]?.attraction_name||S.state.attractionName} №${rows?.[0]?.ticket_no||""} записан`);await refreshStats()}catch(x){if(!networkError(x)){toast(errText(x));button.disabled=false;return}const q=load(K.tickets,[]);q.push({id:tx,workerId:S.profile.id,dayId:S.state.dayId,attractionId:S.state.attractionId,attractionName:S.state.attractionName,payment,reason,soldAt});save(K.tickets,q);toast("Сохранено офлайн · отправится автоматически");renderHome()}}
+    async function refreshStats(){try{const r=await rpc("worker_my_stats");S.state.stats=r?.[0]||{};save(K.state,S.state);renderHome()}catch{renderHome()}}
+    async function completeTask(id,b){b.disabled=true;try{await rpc("worker_complete_task",{p_task_id:id});markTask(id);toast("Задача выполнена")}catch(x){if(!networkError(x)){toast(errText(x));b.disabled=false;return}const q=load(K.tasks,[]);if(!q.includes(id))q.push(id);save(K.tasks,q);markTask(id);toast("Отметка сохранена офлайн")}}
+    function markTask(id){const t=S.state.tasks.find(x=>Number(x.id)===Number(id));if(t)t.completed_at=new Date().toISOString();save(K.state,S.state);renderHome()}
+    async function syncPending(announce=false){if(!navigator.onLine||!S.profile)return announce&&toast("Связи пока нет");let tq=load(K.tickets,[]),sent=0;for(const t of [...tq]){try{await rpc("sync_offline_ticket",{p_day_id:t.dayId,p_attraction_id:t.attractionId,p_payment:t.payment,p_free_reason:t.reason,p_client_tx_id:t.id,p_sold_at:t.soldAt});tq=tq.filter(x=>x.id!==t.id);save(K.tickets,tq);sent++}catch(x){if(networkError(x))break}}
+      let tasks=load(K.tasks,[]);for(const id of [...tasks]){try{await rpc("worker_complete_task",{p_task_id:id});tasks=tasks.filter(x=>Number(x)!==Number(id));save(K.tasks,tasks)}catch(x){if(networkError(x))break}}
+      if(sent)await refreshStats();else if(announce)toast(tq.length?"Некоторые билеты пока ожидают":"Очередь синхронизирована");
+    }
+    async function renderTickets(){stopPoll();shell(`<section class="hero"><h1>Мои билеты</h1><p>Возврат — после решения директора</p></section><button id="back" class="btn light">← Назад</button><section id="ticket-list" class="card"><div class="spinner"></div></section>`);$("#back").onclick=renderHome;try{const rows=await rpc("worker_my_tickets");const box=$("#ticket-list");box.innerHTML=rows?.length?rows.map(t=>`<article class="ticket"><strong>${esc(t.attraction_name)} №${Number(t.ticket_no)} · ${rub(t.price)}</strong><small>${new Date(t.sold_at).toLocaleString("ru-RU",{timeZone:"Europe/Samara"})} · ${paymentName(t.payment)}</small>${refundTag(t)}${t.ticket_status==="VALID"&&Number(t.price)>0&&t.refund_status!=="PENDING"?`<button class="btn light small refund" data-id="${t.ticket_id}">Запросить возврат</button>`:""}</article>`).join(""):'<div class="empty">Билетов пока нет</div>';box.querySelectorAll(".refund").forEach(b=>b.onclick=()=>requestRefund(Number(b.dataset.id),b))}catch(x){$("#ticket-list").innerHTML=`<div class="empty">${esc(errText(x))}</div>`}}
+    function paymentName(p){return({CASH:"Наличные",CARD:"Карта",TRANSFER:"Перевод",CHILD:"Ребёнок",FREE:"Бесплатно"})[p]||p}
+    function refundTag(t){if(t.refund_status==="PENDING")return '<span class="tag wait">Ожидает директора</span>';if(t.refund_status==="APPROVED")return '<span class="tag good">Возврат одобрен</span>';if(t.refund_status==="REJECTED")return '<span class="tag bad">Запрос отклонён</span>';return ""}
+    async function requestRefund(id,b){const reason=prompt("Причина возврата:","")?.trim();if(!reason||reason.length<3)return toast("Укажите причину");b.disabled=true;try{await rpc("worker_request_refund",{p_ticket_id:id,p_reason:reason});toast("Запрос отправлен директору");renderTickets()}catch(x){toast(errText(x));b.disabled=false}}
+    async function enableNotifications(){if(!("Notification" in window))return toast("Добавьте страницу на экран iPhone для уведомлений");try{const p=await Notification.requestPermission();toast(p==="granted"?"Уведомления включены":"Уведомления не разрешены")}catch{toast("Добавьте страницу на главный экран iPhone")}}
+    function notify(title,body){try{if(Notification.permission==="granted")new Notification(title,{body})}catch{}}
+    function notifyTasks(tasks){const seen=load(K.seen,[]),fresh=tasks.filter(t=>!seen.includes(Number(t.id)));if(fresh.length)notify("Новая задача",fresh[0].task_text);save(K.seen,[...new Set([...seen,...tasks.map(t=>Number(t.id))])].slice(-200))}
+    async function start(){
+      window.addEventListener("online",()=>{toast("Интернет восстановлен");syncPending(true);if(S.state)poll()});window.addEventListener("offline",()=>{toast("Офлайн · продажи сохраняются на телефоне");if(S.state)renderHome()});
+      if("serviceWorker" in navigator)navigator.serviceWorker.register("./worker-sw.js").catch(()=>{});
+      S.session=load(K.session);S.profile=load(K.profile);S.code=load(K.code,"");S.state=load(K.state);
+      if(!S.session)return renderLogin();try{await profile();S.profile.must_change_pin?renderPin():renderCode()}catch(x){if(networkError(x)&&S.profile)renderCode();else{localStorage.removeItem(K.session);renderLogin();toast(errText(x))}}
+    }
+    start();
+  })();
+  </script>
+</body>
+</html>

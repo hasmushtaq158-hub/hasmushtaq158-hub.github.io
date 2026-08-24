@@ -1,0 +1,11 @@
+{
+  "name": "Билеты парка — сотрудник",
+  "short_name": "Билеты парка",
+  "description": "Продажа билетов и задачи сотрудника",
+  "lang": "ru",
+  "start_url": "./worker.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f7fb",
+  "theme_color": "#172238"
+}

@@ -79,6 +79,7 @@ h2{margin:0;font-size:23px}
 .mobilebar{display:flex;position:fixed;bottom:0;left:0;right:0;background:var(--navy);z-index:10;padding:7px;overflow:auto}
 .mobilebar button{background:transparent;border:0;color:#bcc7d3;padding:10px 13px;white-space:nowrap}
 .mobilebar button.active{color:var(--gold)}
+.mobilebar button[data-action="logout"]{color:#ffb5ba;font-weight:800}
 }
 @media(max-width:600px){.grid{grid-template-columns:1fr 1fr}
 .metric strong{font-size:22px}
@@ -331,7 +332,7 @@ function bd(r, e) {
 }
 function Wa() {
   const r = Py();
-  Ll.innerHTML = `<div class="layout"><aside class="sidebar"><div class="brand"><span class="mark">\u041F</span><span>\u0411\u0438\u043B\u0435\u0442\u044B \u043F\u0430\u0440\u043A\u0430<small>\u0423\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u0435 \u043E\u043D\u043B\u0430\u0439\u043D</small></span></div><nav class="nav">${yd.map(([e, t]) => `<button data-page="${e}" class="${Ae.page === e ? "active" : ""}">${bd(e, t)}</button>`).join("")}</nav><div class="userbox"><strong>${Mt(Ae.profile.display_name)}</strong><br><span>${Mt(Ae.session.user.email)}</span><br><button class="btn ghost small" data-action="logout" style="margin-top:12px">\u0412\u044B\u0439\u0442\u0438</button></div></aside><main class="main">${r}</main><nav class="mobilebar">${yd.map(([e, t]) => `<button data-page="${e}" class="${Ae.page === e ? "active" : ""}">${bd(e, t)}</button>`).join("")}</nav></div>`, Fy();
+  Ll.innerHTML = `<div class="layout"><aside class="sidebar"><div class="brand"><span class="mark">\u041F</span><span>\u0411\u0438\u043B\u0435\u0442\u044B \u043F\u0430\u0440\u043A\u0430<small>\u0423\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u0435 \u043E\u043D\u043B\u0430\u0439\u043D</small></span></div><nav class="nav">${yd.map(([e, t]) => `<button data-page="${e}" class="${Ae.page === e ? "active" : ""}">${bd(e, t)}</button>`).join("")}</nav><div class="userbox"><strong>${Mt(Ae.profile.display_name)}</strong><br><span>${Mt(Ae.session.user.email)}</span><br><button class="btn ghost small" data-action="logout" style="margin-top:12px">\u0412\u044B\u0439\u0442\u0438</button></div></aside><main class="main">${r}</main><nav class="mobilebar">${yd.map(([e, t]) => `<button data-page="${e}" class="${Ae.page === e ? "active" : ""}">${bd(e, t)}</button>`).join("")}<button data-action="logout">\u0412\u044B\u0439\u0442\u0438</button></nav></div>`, Fy();
 }
 function wu(r) {
   const e = r.filter((i) => i.status !== "CANCELLED"), t = r.filter((i) => i.status === "VALID"), n = r.filter((i) => i.status === "REFUNDED");
