@@ -1,0 +1,19 @@
+{
+  "name": "Билеты парка — управление",
+  "short_name": "Парк · Директор",
+  "description": "Управление рабочим днём, сотрудниками, билетами и заменами",
+  "lang": "ru",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f2f5f8",
+  "theme_color": "#172238",
+  "icons": [
+    {
+      "src": "./manager-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
