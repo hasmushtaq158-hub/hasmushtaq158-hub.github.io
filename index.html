@@ -532,7 +532,11 @@ async function Dy(r) {
   if (r.action === "edit-attraction") return My(r.id);
   if (r.action === "sale-options") return saleOptionsModal(Number(r.id));
   if (r.action === "toggle-replacement-setting") return await Va("manager_set_replacement_enabled", { p_attraction_id: Number(r.id), p_enabled: r.enabled === "true" }), Jr();
-  if (r.action === "end-replacement") return confirm("Завершить или отменить замену?") && await Va("manager_end_replacement", { p_request_id: Number(r.id) }), Jr();
+  if (r.action === "end-replacement") {
+    if (!confirm("Завершить или отменить замену?")) return;
+    if (await Va("manager_end_replacement", { p_request_id: Number(r.id) })) await Ae.client.functions.invoke("replacement-push", { body: { action: "ended", request_id: Number(r.id) } });
+    return Jr();
+  }
   if (r.action === "extend-replacement") return extendReplacementModal(Number(r.id));
   if (r.action === "assign-worker") return assignWorkerModal(r.worker, r.attraction);
   if (r.action === "unassign-worker" && await Va("manager_unassign_worker", { p_worker_id: r.worker })) return Jr();
@@ -593,7 +597,7 @@ function saleOptionsModal(attractionId) {
 function extendReplacementModal(requestId) {
   const modal = Ys(`<form><h3>Продлить замену</h3><div class="field"><label>Добавить время</label><select name="minutes"><option value="5">5 минут</option><option value="10" selected>10 минут</option><option value="15">15 минут</option><option value="30">30 минут</option></select></div><div class="field"><label>Причина</label><input name="reason" minlength="2" maxlength="200" required placeholder="Почему нужно больше времени"></div><div class="actions"><button class="btn gold">Продлить</button><button class="btn ghost" type="button" id="cancel">Отмена</button></div></form>`);
   modal.querySelector("#cancel").onclick = () => modal.remove();
-  modal.querySelector("form").onsubmit = async (event) => { event.preventDefault(); const form = event.target; if (await Va("manager_extend_replacement", { p_request_id: requestId, p_minutes: Number(form.minutes.value), p_reason: form.reason.value.trim() })) { modal.remove(); Jr(); } };
+  modal.querySelector("form").onsubmit = async (event) => { event.preventDefault(); const form = event.target; if (await Va("manager_extend_replacement", { p_request_id: requestId, p_minutes: Number(form.minutes.value), p_reason: form.reason.value.trim() })) { await Ae.client.functions.invoke("replacement-push", { body: { action: "extended", request_id: requestId } }); modal.remove(); Jr(); } };
 }
 function assignWorkerModal(workerId, attractionId) {
   if (!Ae.day) return Er("Сначала откройте рабочий день");
