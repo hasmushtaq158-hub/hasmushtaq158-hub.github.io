@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.parktickets.worker",
+    "sha256_cert_fingerprints": ["62:A2:2E:9A:60:06:43:AC:BF:0B:03:E0:47:6E:BD:84:04:F1:30:C1:25:4C:B8:49:B9:BC:1F:EA:31:75:7F:B5"]
+  }
+}]
