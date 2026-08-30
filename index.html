@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#172238">
 <title>Парк — панель директора</title>
+<link rel="manifest" href="./manager-manifest.webmanifest">
+<link rel="icon" href="./manager-icon.svg" type="image/svg+xml">
 <style>:root{font-family:Arial,system-ui,sans-serif;color:#172238;background:#f2f5f8;font-synthesis:none;--navy:#172238;--gold:#e4a321;--muted:#677386;--red:#b73737;--green:#21825c;--line:#dfe5eb;--card:#fff}
 *{box-sizing:border-box}
 body{margin:0;min-width:320px;overflow-x:hidden;background:radial-gradient(circle at 85% 0,#fff4d6 0,transparent 27rem),#f2f5f8}
@@ -675,6 +677,7 @@ function wd(detailed) {
   popup.document.close();
 }
 async function Wy() {
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("./manager-sw.js").catch(() => {});
   const r = Ay();
   Ae.client = G2(r.url, r.key, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
   const e = location.hash.includes("type=recovery") || location.search.includes("type=recovery");
