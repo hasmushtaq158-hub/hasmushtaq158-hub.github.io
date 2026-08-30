@@ -1,8 +1,26 @@
-[{
-  "relation": ["delegate_permission/common.handle_all_urls"],
-  "target": {
-    "namespace": "android_app",
-    "package_name": "com.parktickets.worker",
-    "sha256_cert_fingerprints": ["62:A2:2E:9A:60:06:43:AC:BF:0B:03:E0:47:6E:BD:84:04:F1:30:C1:25:4C:B8:49:B9:BC:1F:EA:31:75:7F:B5"]
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.parktickets.worker",
+      "sha256_cert_fingerprints": [
+        "62:A2:2E:9A:60:06:43:AC:BF:0B:03:E0:47:6E:BD:84:04:F1:30:C1:25:4C:B8:49:B9:BC:1F:EA:31:75:7F:B5"
+      ]
+    }
+  },
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.parktickets.manager",
+      "sha256_cert_fingerprints": [
+        "9D:D9:22:2C:9C:A5:88:EA:7C:0D:F5:E5:E6:81:7A:AB:7D:80:0D:C1:9F:05:5B:40:E7:7A:75:5E:76:35:70:CD"
+      ]
+    }
   }
-}]
+]
