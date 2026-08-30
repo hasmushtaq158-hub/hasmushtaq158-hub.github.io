@@ -579,9 +579,11 @@ function My(r) {
   const e = Ae.attractions.find((n) => String(n.id) === String(r)), t = Ys(`<form id="attr-form"><h3>${e ? "\u0418\u0437\u043C\u0435\u043D\u0438\u0442\u044C" : "\u041D\u043E\u0432\u044B\u0439"} \u0430\u0442\u0442\u0440\u0430\u043A\u0446\u0438\u043E\u043D</h3><div class="field"><label>\u041D\u0430\u0437\u0432\u0430\u043D\u0438\u0435</label><input name="name" value="${Mt(e?.name || "")}" required></div><div class="field"><label>\u0426\u0435\u043D\u0430, \u20BD</label><input name="price" type="number" min="0" value="${e?.price ?? ""}" required></div><label><input name="active" type="checkbox" ${e?.active !== false ? "checked" : ""}> \u0410\u043A\u0442\u0438\u0432\u0435\u043D</label><div class="actions" style="margin-top:18px"><button class="btn gold">\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C</button><button class="btn ghost" type="button" id="cancel">\u041E\u0442\u043C\u0435\u043D\u0430</button></div></form>`);
   t.querySelector("#cancel").onclick = () => t.remove(), t.querySelector("form").onsubmit = async (n) => {
     n.preventDefault();
-    const i = { name: n.target.name.value.trim(), price: Number(n.target.price.value), active: n.target.active.checked, updated_at: (/* @__PURE__ */ new Date()).toISOString() }, s = e ? Ae.client.from("attractions").update(i).eq("id", e.id) : Ae.client.from("attractions").insert(i), { error: a } = await s;
-    if (a) return Er(a.message);
-    t.remove(), await Jr();
+    const i = { p_attraction_id: e?.id ?? null, p_name: n.target.name.value.trim(), p_price: Number(n.target.price.value), p_active: n.target.active.checked }, o = t.querySelector('button[type="submit"],button:not([type])');
+    o.disabled = true;
+    const { error: a } = await Ae.client.rpc("manager_save_attraction", i);
+    if (a) return o.disabled = false, Er("Ошибка сохранения: " + a.message);
+    Er(e ? "Игра обновлена" : "Игра добавлена"), t.remove(), await Jr();
   };
 }
 function saleOptionsModal(attractionId) {
