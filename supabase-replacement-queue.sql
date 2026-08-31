@@ -98,8 +98,14 @@ begin
     raise exception 'REPLACEMENT_WORKER_BUSY';
   end if;
 
-  insert into public.worker_assignments(day_id,worker_id,attraction_id,assigned_by,assigned_at,active)
-  values(v_r.day_id,auth.uid(),v_r.attraction_id,v_r.requester_id,now(),true)
+  insert into public.worker_assignments(day_id,worker_id,attraction_id,assigned_by,assigned_at,active,ended_at)
+  values(v_r.day_id,auth.uid(),v_r.attraction_id,v_r.requester_id,now(),true,null)
+  on conflict (day_id,worker_id) do update
+    set attraction_id=excluded.attraction_id,
+        assigned_by=excluded.assigned_by,
+        assigned_at=excluded.assigned_at,
+        active=true,
+        ended_at=null
   returning id into v_assignment_id;
 
   update public.replacement_requests
