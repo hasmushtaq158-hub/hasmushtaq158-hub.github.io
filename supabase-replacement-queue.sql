@@ -185,7 +185,11 @@ begin
   where status='OPEN' and daily_code=p_daily_code order by id desc limit 1;
   if v_day_id is null then raise exception 'INVALID_DAY_CODE'; end if;
 
-  select exists(select 1 from public.day_replacement_workers where day_id=v_day_id and worker_id=auth.uid() and active)
+  select exists(
+    select 1
+    from public.day_replacement_workers drw
+    where drw.day_id=v_day_id and drw.worker_id=auth.uid() and drw.active
+  )
     or exists(select 1 from public.profiles where id=auth.uid() and role='worker' and active and job_title='REPLACEMENT')
   into v_is_replacement;
 
