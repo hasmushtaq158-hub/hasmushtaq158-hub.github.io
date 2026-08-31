@@ -113,7 +113,10 @@
       if(!S.state)return;try{const previous=S.state,next=await loadState(false),moved=Number(next.attractionId)!==Number(previous.attractionId),oldIds=new Set((previous.replacement||[]).map(r=>Number(r.request_id))),fresh=(next.replacement||[]).find(r=>r.request_id&&!oldIds.has(Number(r.request_id)));S.state=next;save(K.state,next);if(fresh){notify("Новый запрос замены",`${fresh.other_worker_name||''} · ${fresh.attraction_name||''}`);toast("Новый запрос замены")}else if(moved){notify("Новое назначение",`Директор перевёл вас: ${next.attractionName}`);toast("Директор изменил аттракцион")}renderHome();await syncPending()}catch{S.timer=setTimeout(poll,15000)}
     }
     async function reloadWorkerState(message){try{S.state=await loadState(false);save(K.state,S.state);renderHome();message&&toast(message)}catch(x){toast(errText(x));renderHome()}}
-    async function invokePush(action,id){try{await raw("POST","/functions/v1/replacement-push",{action,request_id:Number(id)},true,false)}catch{}}
+    async function invokePush(action,id){
+      try{const result=await raw("POST","/functions/v1/replacement-push",{action,request_id:Number(id)},true,false);if(result?.ok===false)console.warn("Push delivery failed",result);return result}
+      catch(x){console.warn("Push request failed",x);return{ok:false,error:errText(x)}}
+    }
     async function requestReplacement(){const b=$("#request-replacement");b.disabled=true;try{const id=await rpc("worker_request_replacement",{p_attraction_id:S.state.attractionId,p_daily_code:S.code});await invokePush("requested",id);await reloadWorkerState("Запрос добавлен в очередь")}catch(x){toast(errText(x));b.disabled=false}}
     async function acceptReplacement(id,b){b.disabled=true;try{await rpc("worker_accept_replacement",{p_request_id:id});await invokePush("accepted",id);S.state=await loadState(true);save(K.state,S.state);renderHome();toast("Замена принята · продажа билетов активна · 15 минут")}catch(x){toast(errText(x));b.disabled=false}}
     async function cancelReplacement(id,b){b.disabled=true;try{await rpc("worker_cancel_replacement",{p_request_id:id});await invokePush("ended",id);await reloadWorkerState("Запрос отменён")}catch(x){toast(errText(x));b.disabled=false}}
@@ -132,7 +135,20 @@
     function refundTag(t){if(t.refund_status==="PENDING")return '<span class="tag wait">Ожидает директора</span>';if(t.refund_status==="APPROVED")return '<span class="tag good">Возврат одобрен</span>';if(t.refund_status==="REJECTED")return '<span class="tag bad">Запрос отклонён</span>';return ""}
     async function requestRefund(id,b){const reason=prompt("Причина возврата:","")?.trim();if(!reason||reason.length<3)return toast("Укажите причину");b.disabled=true;try{await rpc("worker_request_refund",{p_ticket_id:id,p_reason:reason});toast("Запрос отправлен директору");renderTickets()}catch(x){toast(errText(x));b.disabled=false}}
     function vapidBytes(value){const pad="=".repeat((4-value.length%4)%4),base64=(value+pad).replace(/-/g,"+").replace(/_/g,"/"),raw=atob(base64),out=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);return out}
-    async function enableNotifications(){if(!("Notification" in window)||!("serviceWorker" in navigator)||!window.PushManager)return toast("Добавьте приложение на главный экран и откройте его снова");try{const p=await Notification.requestPermission();if(p!=="granted")return toast("Уведомления не разрешены");const registration=await navigator.serviceWorker.ready;let subscription=await registration.pushManager.getSubscription();if(!subscription)subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:vapidBytes(VAPID_PUBLIC_KEY)});const data=subscription.toJSON();await rpc("worker_save_push_subscription",{p_endpoint:data.endpoint,p_p256dh:data.keys?.p256dh,p_auth:data.keys?.auth,p_user_agent:navigator.userAgent});toast("Уведомления включены")}catch(x){toast("Не удалось включить уведомления: "+errText(x))}}
+    async function enableNotifications(){
+      const ios=/iPad|iPhone|iPod/.test(navigator.userAgent),standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
+      if(ios&&!standalone)return toast("iPhone: Safari → Поделиться → На экран «Домой», затем откройте значок");
+      if(!("Notification" in window)||!("serviceWorker" in navigator)||!window.PushManager)return toast("Этот браузер не поддерживает push-уведомления");
+      try{
+        const p=await Notification.requestPermission();if(p!=="granted")return toast("Разрешите уведомления в настройках телефона");
+        const registration=await navigator.serviceWorker.ready;let subscription=await registration.pushManager.getSubscription();
+        if(!subscription)subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:vapidBytes(VAPID_PUBLIC_KEY)});
+        const data=subscription.toJSON();if(!data.endpoint||!data.keys?.p256dh||!data.keys?.auth)throw new Error("PUSH_SUBSCRIPTION_INCOMPLETE");
+        await rpc("worker_save_push_subscription",{p_endpoint:data.endpoint,p_p256dh:data.keys.p256dh,p_auth:data.keys.auth,p_user_agent:navigator.userAgent});
+        await registration.showNotification("Билеты парка",{body:"Уведомления успешно подключены",tag:"park-worker-test",data:{url:"./worker.html"}});
+        toast("Уведомления включены · тест отправлен");
+      }catch(x){toast("Не удалось включить уведомления: "+errText(x))}
+    }
     function notify(title,body){try{if(Notification.permission==="granted")new Notification(title,{body})}catch{}}
     function notifyTasks(tasks){const seen=load(K.seen,[]),fresh=tasks.filter(t=>!seen.includes(Number(t.id)));if(fresh.length)notify("Новая задача",fresh[0].task_text);save(K.seen,[...new Set([...seen,...tasks.map(t=>Number(t.id))])].slice(-200))}
     async function start(){
