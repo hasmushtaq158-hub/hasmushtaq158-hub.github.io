@@ -24,6 +24,8 @@ create index if not exists payroll_entries_worker_date_idx
   on public.payroll_entries(worker_id,work_date desc);
 create index if not exists payroll_entries_date_idx
   on public.payroll_entries(work_date,status);
+create unique index if not exists payroll_entries_one_active_worker_day_idx
+  on public.payroll_entries(worker_id,work_date) where status='ACTIVE';
 
 alter table public.payroll_entries enable row level security;
 drop policy if exists payroll_entries_no_direct_access on public.payroll_entries;
@@ -60,6 +62,9 @@ begin
   if p_day_type not in ('NORMAL','HOLIDAY') then raise exception 'INVALID_DAY_TYPE'; end if;
   if coalesce(p_bonus,0) < 0 or coalesce(p_deduction,0) < 0 then raise exception 'INVALID_ADJUSTMENT'; end if;
   if not exists(select 1 from public.profiles where id=p_worker_id and role='worker') then raise exception 'WORKER_NOT_FOUND'; end if;
+  if exists(select 1 from public.payroll_entries where worker_id=p_worker_id and work_date=p_work_date and status='ACTIVE') then
+    raise exception 'PAYROLL_ALREADY_RECORDED';
+  end if;
   select name into v_attraction from public.attractions where id=p_attraction_id;
   if v_attraction is null then raise exception 'ATTRACTION_NOT_FOUND'; end if;
 
@@ -177,9 +182,22 @@ as $function$
     and p_to-p_from between 0 and 31;
 $function$;
 
+create or replace function public.worker_my_payroll_totals()
+returns table(work_days bigint,duration_minutes bigint,total_amount numeric)
+language sql security definer set search_path=public
+as $function$
+  select count(distinct e.work_date),coalesce(sum(e.duration_minutes),0)::bigint,
+    round(coalesce(sum(e.total_amount),0)-coalesce((select sum(n.amount) from public.worker_notices n where n.worker_id=auth.uid() and n.notice_type='PENALTY' and n.deduct_from_salary and n.status='ACTIVE'),0),2)
+  from public.payroll_entries e
+  where e.worker_id=auth.uid() and e.status='ACTIVE' and e.work_date>=date '2026-09-01';
+$function$;
+
 grant execute on function public.manager_add_payroll_entry(uuid,date,bigint,time,time,text,numeric,numeric,text) to authenticated;
 grant execute on function public.manager_cancel_payroll_entry(bigint) to authenticated;
 grant execute on function public.manager_payroll_entries(date,date) to authenticated;
 grant execute on function public.manager_payroll_summary(date,date) to authenticated;
 grant execute on function public.worker_my_payroll(date,date) to authenticated;
 grant execute on function public.worker_my_payroll_penalties(date,date) to authenticated;
+grant execute on function public.worker_my_payroll_totals() to authenticated;
+
+notify pgrst, 'reload schema';
