@@ -244,7 +244,7 @@ to{opacity:1;transform:none}
     async resetPasswordForEmail(email,{redirectTo}={}){const q=redirectTo?`?redirect_to=${encodeURIComponent(redirectTo)}`:"";return raw("/auth/v1/recover"+q,{method:"POST",body:{email}})},
     async updateUser(values){await refresh();const r=await raw("/auth/v1/user",{method:"PUT",body:values,token:session?.access_token});if(!r.error&&session){session.user=r.data;save(session)}return r}
   };
-  return{auth,from:t=>new Query(t),rpc:(name,args)=>api(`/rest/v1/rpc/${name}`,{method:"POST",body:args}),functions:{invoke:(name,{body}={})=>api(`/functions/v1/${name}`,{method:"POST",body})},channel(){const callbacks=new Set;return{on(...args){const cb=args.at(-1);if(typeof cb==="function")callbacks.add(cb);return this},subscribe(){this.timer=setInterval(()=>callbacks.forEach(cb=>cb()),15000);return this}}},removeChannel(ch){clearInterval(ch?.timer)}}
+  return{auth,from:t=>new Query(t),rpc:(name,args)=>api(`/rest/v1/rpc/${name}`,{method:"POST",body:args}),functions:{invoke:(name,{body}={})=>api(`/functions/v1/${name}`,{method:"POST",body})},channel(){const callbacks=new Set;return{on(...args){const cb=args.at(-1);if(typeof cb==="function")callbacks.add(cb);return this},subscribe(){this.timer=setInterval(()=>callbacks.forEach(cb=>cb()),60000);return this}}},removeChannel(ch){clearInterval(ch?.timer)}}
 }
 
 
@@ -282,7 +282,9 @@ const Sy = "./DejaVuSans.ttf", Ll = document.querySelector("#app"), qc = documen
   payrollReportSecond: [],
   channel: null,
   recovering: false,
-  lastPendingIds: null
+  lastPendingIds: null,
+  storageUsage: null,
+  storageTimer: null
 }, Mt = (r) => String(r ?? "").replace(/[&<>'"]/g, (e) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[e]), dr = (r) => new Intl.NumberFormat("ru-RU").format(Number(r || 0)) + " \u20BD", El = (r) => r ? new Intl.DateTimeFormat("ru-RU", { dateStyle: "short", timeStyle: "medium", timeZone: "Europe/Samara" }).format(new Date(r)) : "\u2014", Zp = (r) => ({ CASH: "\u041D\u0430\u043B\u0438\u0447\u043D\u044B\u0435", CARD: "\u041A\u0430\u0440\u0442\u0430", TRANSFER: "\u041F\u0435\u0440\u0435\u0432\u043E\u0434", CHILD: "\u0420\u0435\u0431\u0451\u043D\u043E\u043A", FREE: "\u0411\u0435\u0441\u043F\u043B\u0430\u0442\u043D\u043E" })[r] || r, Qp = (r) => ({ VALID: "\u0414\u0435\u0439\u0441\u0442\u0432\u0438\u0442\u0435\u043B\u0435\u043D", CANCELLED: "\u041E\u0442\u043C\u0435\u043D\u0451\u043D", REFUNDED: "\u0412\u043E\u0437\u0432\u0440\u0430\u0442" })[r] || r;
 function getPayrollPeriod() {
   const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Samara", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
@@ -312,12 +314,12 @@ function payrollAssignmentsForDate(workDate) {
   const seen = new Set();
   return Ae.assignments.filter((row) => Number(row.day_id) === Number(businessDay.id) && row.active).filter((row) => !seen.has(String(row.worker_id)) && seen.add(String(row.worker_id)));
 }
-function payrollPreview(start, end, attractionName, dayType, bonus = 0, deduction = 0) {
+function payrollPreview(start, end, attractionName, dayType, bonus = 0, deduction = 0, workerName = "") {
   if (!start || !end) return { hours: "—", total: "—" };
   const [sh, sm] = start.split(":").map(Number), [eh, em] = end.split(":").map(Number); let minutes = eh * 60 + em - sh * 60 - sm;
   if (minutes <= 0) minutes += 1440;
   if (minutes > 960) return { hours: "Ошибка", total: "—" };
-  const victory = String(attractionName || "").toLocaleLowerCase("ru-RU").includes("колесо победы"), rate = victory ? (dayType === "HOLIDAY" ? 200 : 180) : (dayType === "HOLIDAY" ? 180 : 150);
+  const normalizedWorker = String(workerName || "").toLocaleLowerCase("ru-RU"), marina = normalizedWorker.includes("кристиан") && normalizedWorker.includes("марин"), victory = String(attractionName || "").toLocaleLowerCase("ru-RU").includes("колесо победы"), rate = marina ? 200 : victory ? (dayType === "HOLIDAY" ? 200 : 180) : (dayType === "HOLIDAY" ? 180 : 150);
   return { hours: `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, "0")}`, rate, total: Math.round((minutes / 60 * rate + Number(bonus || 0) - Number(deduction || 0)) * 100) / 100 };
 }
 function Er(r) {
@@ -366,7 +368,12 @@ async function e0() {
   if (!r) return Ja();
   const { data: e, error: t } = await Ae.client.from("profiles").select("*").eq("id", r).single();
   if (t || e?.role !== "manager" || !e?.active) return await Ae.client.auth.signOut(), Er("\u0423 \u044D\u0442\u043E\u0439 \u0443\u0447\u0451\u0442\u043D\u043E\u0439 \u0437\u0430\u043F\u0438\u0441\u0438 \u043D\u0435\u0442 \u043F\u0440\u0430\u0432 \u0434\u0438\u0440\u0435\u043A\u0442\u043E\u0440\u0430");
-  Ae.profile = e, await t0(), Ly(), Wa();
+  Ae.profile = e, await t0(), await loadStorageUsage(), Ly(), Wa();
+  clearInterval(Ae.storageTimer), Ae.storageTimer = setInterval(loadStorageUsage, 21600000);
+}
+async function loadStorageUsage() {
+  const { data, error } = await Ae.client.rpc("manager_database_storage", {});
+  if (!error && data) Ae.storageUsage = Array.isArray(data) ? data[0] : data;
 }
 async function t0() {
   const payrollPeriod = getPayrollPeriod(), payrollFrom = Ae.payrollFrom || payrollPeriod.from, payrollTo = Ae.payrollTo || payrollPeriod.to;
@@ -509,6 +516,11 @@ function ticketsForAttraction(dayId, attractionId) {
   return _u(dayId).filter((ticket) => Number(attractionForTicket(ticket)?.id) === Number(attractionId));
 }
 function Ya(r, e, t = "") {
+  if (e === "Данные обновляются автоматически · время Самары") e = "Данные обновляются каждую минуту · время Самары";
+  if (r === "Онлайн-обзор" && Ae.storageUsage) {
+    const usage = Ae.storageUsage, percent = Number(usage.used_percent || 0), tone = percent >= 90 ? "closed" : "open", warning = percent >= 90 ? " · Критично" : percent >= 75 ? " · Мало места" : "";
+    t = `<span class="status ${tone}" title="Проверяется при входе и каждые 6 часов">Хранилище: ${percent.toFixed(1)}% · ${Number(usage.used_mb || 0).toFixed(1)}/${Number(usage.limit_mb || 500).toFixed(0)} МБ${warning}</span>${t}`;
+  }
   return `<header class="topbar"><div><h2>${r}</h2><p class="muted">${e}</p></div><div class="actions">${t}</div></header>`;
 }
 function Py() {
@@ -540,7 +552,7 @@ function payrollPage() {
   draft.rows ||= {};
   const roster = payrollAssignmentsForDate(draft.date), rosterRows = roster.map((row) => {
     const saved = Ae.payrollEntries.find((entry) => entry.status !== "CANCELLED" && entry.work_date === draft.date && String(entry.worker_id) === String(row.worker_id)), isOpen = saved?.status === "OPEN", isDone = saved?.status === "ACTIVE", values = draft.rows[row.worker_id] || {};
-    const startValue = saved ? String(saved.started_time).slice(0,5) : values.start || "", endValue = isDone ? String(saved.ended_time).slice(0,5) : values.end || "", preview = payrollPreview(startValue, endValue, row.attraction_name, draft.day_type, values.bonus, values.deduction);
+    const startValue = saved ? String(saved.started_time).slice(0,5) : values.start || "", endValue = isDone ? String(saved.ended_time).slice(0,5) : values.end || "", preview = payrollPreview(startValue, endValue, row.attraction_name, draft.day_type, values.bonus, values.deduction, row.worker_name);
     const status = isDone ? '<span class="status open"><i class="dot"></i>Закрыт</span>' : isOpen ? '<label><input name="include" type="checkbox"> Закрыть</label><span class="status waiting"><i class="dot"></i>Работает</span>' : '<label><input name="include" type="checkbox"> Сохранить начало</label>';
     return `<tr data-payroll-worker="${row.worker_id}" data-entry-id="${saved?.id || ""}" data-entry-status="${saved?.status || ""}" data-attraction="${row.attraction_id}" data-attraction-name="${Mt(row.attraction_name)}"><td><strong>${Mt(row.worker_name)}</strong><small class="block">${Mt(row.attraction_name)}</small></td><td><input name="start" type="time" value="${Mt(startValue)}" ${saved ? "disabled" : ""}></td><td><input name="end" type="time" value="${Mt(endValue)}" ${isDone ? "disabled" : ""}></td><td class="payroll-hours">${isDone ? `${Math.floor(saved.duration_minutes/60)}:${String(saved.duration_minutes%60).padStart(2,"0")}` : preview.hours}</td><td>${saved?.hourly_rate || preview.rate || "—"}</td><td><input name="bonus" type="number" min="0" value="${Mt(isDone ? saved.bonus : values.bonus || 0)}" ${isDone ? "disabled" : ""}></td><td><input name="deduction" type="number" min="0" value="${Mt(isDone ? saved.deduction : values.deduction || 0)}" ${isDone ? "disabled" : ""}></td><td class="payroll-total">${isDone ? dr(saved.total_amount) : preview.total === "—" ? "—" : dr(preview.total)}</td><td>${status}</td></tr>`;
   }).join("");
@@ -613,7 +625,7 @@ function Fy() {
   rosterDate && (rosterDate.onchange = () => { Ae.payrollDraft.date = rosterDate.value; Ae.payrollDraft.rows = {}; const day = new Date(rosterDate.value + "T00:00:00Z").getUTCDay(); Ae.payrollDraft.day_type = day === 0 || day === 6 ? "HOLIDAY" : "NORMAL"; Wa(); });
   payrollDayType && (payrollDayType.onchange = async () => { Ae.payrollDraft.day_type = payrollDayType.value; payrollDayType.disabled = true; await Va("manager_set_open_payroll_day_type", { p_work_date: Ae.payrollDraft.date, p_day_type: Ae.payrollDraft.day_type }); await Jr(); });
   if (bulkPayroll) {
-    const updateRow = (row) => { const id = row.dataset.payrollWorker, values = Ae.payrollDraft.rows[id] ||= {}, start = row.querySelector('[name="start"]'), end = row.querySelector('[name="end"]'), bonus = row.querySelector('[name="bonus"]'), deduction = row.querySelector('[name="deduction"]'); if (row.dataset.entryStatus === "ACTIVE") return; Object.assign(values, { start: start.value, end: end.value, bonus: bonus.value, deduction: deduction.value }); const preview = payrollPreview(start.value, end.value, row.dataset.attractionName, Ae.payrollDraft.day_type, bonus.value, deduction.value); row.querySelector(".payroll-hours").textContent = preview.hours; row.querySelector(".payroll-total").textContent = preview.total === "—" ? "—" : dr(preview.total); };
+    const updateRow = (row) => { const id = row.dataset.payrollWorker, values = Ae.payrollDraft.rows[id] ||= {}, start = row.querySelector('[name="start"]'), end = row.querySelector('[name="end"]'), bonus = row.querySelector('[name="bonus"]'), deduction = row.querySelector('[name="deduction"]'); if (row.dataset.entryStatus === "ACTIVE") return; Object.assign(values, { start: start.value, end: end.value, bonus: bonus.value, deduction: deduction.value }); const preview = payrollPreview(start.value, end.value, row.dataset.attractionName, Ae.payrollDraft.day_type, bonus.value, deduction.value, row.querySelector("strong")?.textContent || ""); row.querySelector(".payroll-hours").textContent = preview.hours; row.querySelector(".payroll-total").textContent = preview.total === "—" ? "—" : dr(preview.total); };
     bulkPayroll.oninput = (event) => { const row = event.target.closest("[data-payroll-worker]"); if (row) { updateRow(row); if ((event.target.name === "start" && event.target.value) || (event.target.name === "end" && event.target.value)) { const include = row.querySelector('[name="include"]'); if (include) include.checked = true; } } };
     applyTimes.onclick = () => { Ae.payrollDraft.start = bulkPayroll.common_start.value; Ae.payrollDraft.end = bulkPayroll.common_end.value; bulkPayroll.querySelectorAll("[data-payroll-worker]").forEach((row) => { const start = row.querySelector('[name="start"]'), end = row.querySelector('[name="end"]'); if (!start.disabled) { start.value = Ae.payrollDraft.start; end.value = Ae.payrollDraft.end; const include = row.querySelector('[name="include"]'); if (include && start.value) include.checked = true; updateRow(row); } }); };
     bulkPayroll.onsubmit = async (event) => { event.preventDefault(); const rows = [...bulkPayroll.querySelectorAll("[data-payroll-worker]")].filter((row) => row.dataset.entryStatus !== "ACTIVE" && row.querySelector('[name="include"]')?.checked); if (!rows.length) return Er("Отметьте сотрудников, которых нужно сохранить"); const button = bulkPayroll.querySelector('button[type="submit"],button:not([type])'); button.disabled = true; let saved = 0; for (const row of rows) { updateRow(row); const v = Ae.payrollDraft.rows[row.dataset.payrollWorker]; let error; if (row.dataset.entryStatus === "OPEN") { if (!v.end) { Er("Укажите время окончания у отмеченного сотрудника"); button.disabled = false; return; } ({ error } = await Ae.client.rpc("manager_finish_payroll_entry", { p_entry_id: Number(row.dataset.entryId), p_ended_time: v.end, p_bonus: Number(v.bonus || 0), p_deduction: Number(v.deduction || 0), p_note: null })); } else { if (!v.start) { Er("Укажите время начала у отмеченного сотрудника"); button.disabled = false; return; } const functionName = v.end ? "manager_add_payroll_entry" : "manager_start_payroll_entry", params = v.end ? { p_worker_id: row.dataset.payrollWorker, p_work_date: Ae.payrollDraft.date, p_attraction_id: Number(row.dataset.attraction), p_started_time: v.start, p_ended_time: v.end, p_day_type: Ae.payrollDraft.day_type, p_bonus: Number(v.bonus || 0), p_deduction: Number(v.deduction || 0), p_note: null } : { p_worker_id: row.dataset.payrollWorker, p_work_date: Ae.payrollDraft.date, p_attraction_id: Number(row.dataset.attraction), p_started_time: v.start, p_day_type: Ae.payrollDraft.day_type, p_note: null }; ({ error } = await Ae.client.rpc(functionName, params)); } if (error) { Er(error.message.includes("PAYROLL_ALREADY_RECORDED") ? "Этот сотрудник уже записан за выбранный день" : "Ошибка: " + error.message); button.disabled = false; return; } saved++; } Ae.payrollDraft.rows = {}; Er(`Сохранено сотрудников: ${saved}`); await Jr(); };
