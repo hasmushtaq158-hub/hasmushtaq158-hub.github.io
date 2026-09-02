@@ -207,7 +207,7 @@ to{opacity:1;transform:none}
 @media(max-width:1100px){.attraction-board{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:1050px){.payment-breakdown{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:650px){.attraction-board{grid-template-columns:1fr}.check-grid{grid-template-columns:1fr}.task-item{align-items:flex-start;flex-wrap:wrap}.task-body{min-width:calc(100% - 60px)}.report-heading{display:block}.report-heading .option-pills{margin-top:14px}.task-alert b:last-child{display:none}.payment-breakdown{grid-template-columns:1fr 1fr}.payment-stat{min-height:124px;padding:13px}.payment-stat strong{font-size:21px}}
-    .payroll-sheet{min-width:1050px;border-collapse:separate;border-spacing:0}.payroll-sheet th{position:sticky;top:0;background:#f4f7fb;z-index:2}.payroll-sheet th:first-child,.payroll-sheet td:first-child{position:sticky;left:0;background:#fff;z-index:1;min-width:190px}.payroll-sheet th:first-child{background:#f4f7fb;z-index:3}.payroll-sheet input[type="time"]{min-width:112px}.payroll-sheet input[type="number"]{width:88px;padding:10px}.payroll-sheet td{vertical-align:middle}.payroll-sheet tbody tr:hover td{background:#fff9e8}.payroll-sheet tbody tr:hover td:first-child{background:#fff9e8}
+    .payroll-sheet{min-width:1050px;border-collapse:separate;border-spacing:0}.payroll-sheet th{position:sticky;top:0;background:#f4f7fb;z-index:2}.payroll-sheet th:first-child,.payroll-sheet td:first-child{position:sticky;left:0;background:#fff;z-index:1;min-width:190px}.payroll-sheet th:first-child{background:#f4f7fb;z-index:3}.payroll-sheet input[type="time"]{min-width:112px}.payroll-sheet input[type="number"]{width:88px;padding:10px}.payroll-sheet td{vertical-align:middle}.payroll-sheet tbody tr:hover td{background:#fff9e8}.payroll-sheet tbody tr:hover td:first-child{background:#fff9e8}.report-kind-tabs{display:flex;gap:10px;margin:0 0 18px;overflow:auto}.report-kind-tabs button{white-space:nowrap}.salary-report-sheet{min-width:1180px;border-collapse:collapse}.salary-report-sheet th{background:#15233b;color:#fff;text-align:center;white-space:normal;line-height:1.35}.salary-report-sheet th:first-child,.salary-report-sheet td:first-child{position:sticky;left:0;z-index:2;text-align:left}.salary-report-sheet td:first-child{background:#fff}.salary-report-sheet th:first-child{background:#15233b;z-index:3}.salary-report-sheet td{text-align:right}.salary-report-sheet tbody tr:nth-child(even) td{background:#f8fafc}.salary-report-sheet tbody tr:nth-child(even) td:first-child{background:#f8fafc}.salary-report-sheet tfoot td{font-weight:850;background:#fff3cd;border-top:2px solid var(--gold)}
   </style>
 </head>
 <body>
@@ -276,6 +276,10 @@ const Sy = "./DejaVuSans.ttf", Ll = document.querySelector("#app"), qc = documen
   replacementSettings: [],
   reportDayId: null,
   reportAttractionId: null,
+  reportMode: "games",
+  payrollReportMonth: null,
+  payrollReportFirst: [],
+  payrollReportSecond: [],
   channel: null,
   recovering: false,
   lastPendingIds: null
@@ -286,6 +290,11 @@ function getPayrollPeriod() {
   if (day <= 15) return { from: `${year}-${pad(month)}-01`, to: `${year}-${pad(month)}-15`, payDate: `${year}-${pad(month)}-16` };
   const last = new Date(Date.UTC(year, month, 0)).getUTCDate(), next = month === 12 ? { year: year + 1, month: 1 } : { year, month: month + 1 };
   return { from: `${year}-${pad(month)}-16`, to: `${year}-${pad(month)}-${pad(last)}`, payDate: `${next.year}-${pad(next.month)}-01` };
+}
+function getPayrollReportDates() {
+  const month = Ae.payrollReportMonth || new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Samara", year: "numeric", month: "2-digit" }).format(new Date()), [year, number] = month.split("-").map(Number), pad = (n) => String(n).padStart(2, "0"), last = new Date(Date.UTC(year, number, 0)).getUTCDate();
+  Ae.payrollReportMonth = `${year}-${pad(number)}`;
+  return { firstFrom: `${year}-${pad(number)}-01`, firstTo: `${year}-${pad(number)}-15`, secondFrom: `${year}-${pad(number)}-16`, secondTo: `${year}-${pad(number)}-${pad(last)}`, last };
 }
 function payrollKnownAttraction(workerId, workDate) {
   if (!workerId || !workDate) return null;
@@ -361,7 +370,8 @@ async function e0() {
 }
 async function t0() {
   const payrollPeriod = getPayrollPeriod(), payrollFrom = Ae.payrollFrom || payrollPeriod.from, payrollTo = Ae.payrollTo || payrollPeriod.to;
-  const [r, e, t, i, s, sale, assignments, tasks, replacementDashboard, dailyReplacement, replacementSettings, notices, payrollEntries, payrollSummary] = await Promise.all([
+  const reportDates = getPayrollReportDates();
+  const [r, e, t, i, s, sale, assignments, tasks, replacementDashboard, dailyReplacement, replacementSettings, notices, payrollEntries, payrollSummary, payrollReportFirst, payrollReportSecond] = await Promise.all([
     Ae.client.from("business_days").select("id,label,daily_code,status,opened_at,closed_at").order("id", { ascending: false }).limit(120),
     Ae.client.from("attractions").select("*").order("id"),
     Ae.client.from("profiles").select("id,employee_code,display_name,active,must_change_pin,created_at").eq("role", "worker").order("display_name"),
@@ -375,9 +385,11 @@ async function t0() {
     Ae.client.rpc("manager_replacement_settings", {}),
     Ae.client.rpc("manager_worker_notices", {}),
     Ae.client.rpc("manager_payroll_entries", { p_from: payrollFrom, p_to: payrollTo }),
-    Ae.client.rpc("manager_payroll_summary", { p_from: payrollFrom, p_to: payrollTo })
+    Ae.client.rpc("manager_payroll_summary", { p_from: payrollFrom, p_to: payrollTo }),
+    Ae.client.rpc("manager_payroll_summary", { p_from: reportDates.firstFrom, p_to: reportDates.firstTo }),
+    Ae.client.rpc("manager_payroll_summary", { p_from: reportDates.secondFrom, p_to: reportDates.secondTo })
   ]);
-  [r, e, t, i].find((l) => l.error)?.error && Er("\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043E\u0431\u043D\u043E\u0432\u0438\u0442\u044C \u0434\u0430\u043D\u043D\u044B\u0435"), Ae.days = r.data || [], Ae.day = Ae.days.find((l) => l.status === "OPEN") || null, Ae.attractions = e.data || [], Ae.workers = t.data || [], Ae.shifts = i.data || [], Ae.saleOptions = sale.data || [], Ae.assignments = assignments.data || [], Ae.tasks = tasks.data || [], Ae.replacements = replacementDashboard.data || [], Ae.dailyReplacement = dailyReplacement.data || [], Ae.replacementSettings = replacementSettings.data || [], Ae.notices = notices.data || [], Ae.payrollEntries = payrollEntries.data || [], Ae.payrollSummary = payrollSummary.data || [], Ae.payrollFrom = payrollFrom, Ae.payrollTo = payrollTo;
+  [r, e, t, i].find((l) => l.error)?.error && Er("\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043E\u0431\u043D\u043E\u0432\u0438\u0442\u044C \u0434\u0430\u043D\u043D\u044B\u0435"), Ae.days = r.data || [], Ae.day = Ae.days.find((l) => l.status === "OPEN") || null, Ae.attractions = e.data || [], Ae.workers = t.data || [], Ae.shifts = i.data || [], Ae.saleOptions = sale.data || [], Ae.assignments = assignments.data || [], Ae.tasks = tasks.data || [], Ae.replacements = replacementDashboard.data || [], Ae.dailyReplacement = dailyReplacement.data || [], Ae.replacementSettings = replacementSettings.data || [], Ae.notices = notices.data || [], Ae.payrollEntries = payrollEntries.data || [], Ae.payrollSummary = payrollSummary.data || [], Ae.payrollReportFirst = payrollReportFirst.data || [], Ae.payrollReportSecond = payrollReportSecond.data || [], Ae.payrollFrom = payrollFrom, Ae.payrollTo = payrollTo;
   await loadTicketsForDays([Ae.day?.id, Ae.reportDayId || Ae.days[0]?.id]);
   const o = s.data || [];
   if (Ey(o), Ae.refunds = o, Ae.day) {
@@ -414,7 +426,7 @@ function Jr() {
     await t0(), Wa();
   }, 350);
 }
-const yd = [["overview", "\u041E\u0431\u0437\u043E\u0440"], ["attractions", "\u0410\u0442\u0442\u0440\u0430\u043A\u0446\u0438\u043E\u043D\u044B"], ["workers", "\u0421\u043E\u0442\u0440\u0443\u0434\u043D\u0438\u043A\u0438"], ["payroll", "Зарплата"], ["replacement", "Замена"], ["tasks", "\u0417\u0430\u0434\u0430\u0447\u0438"], ["notices", "Нарушения"], ["tickets", "\u0411\u0438\u043B\u0435\u0442\u044B"], ["reports", "\u041E\u0442\u0447\u0451\u0442\u044B"]], bu = () => Ae.refunds.filter((r) => r.status === "PENDING"), pendingTasks = () => Ae.tasks.filter((r) => r.status === "ACTIVE" && Number(r.completed_count || 0) < Number(r.recipients_count || 0));
+const yd = [["overview", "\u041E\u0431\u0437\u043E\u0440"], ["attractions", "\u0410\u0442\u0442\u0440\u0430\u043A\u0446\u0438\u043E\u043D\u044B"], ["workers", "\u0421\u043E\u0442\u0440\u0443\u0434\u043D\u0438\u043A\u0438"], ["payroll", "Зарплата"], ["replacement", "Замена"], ["tasks", "\u0417\u0430\u0434\u0430\u0447\u0438"], ["notices", "Нарушения"], ["tickets", "\u0411\u0438\u043B\u0435\u0442\u044B"], ["reports", "\u041E\u0442\u0447\u0451\u0442\u044B"], ["payroll_report", "Отчёт по зарплате"]], bu = () => Ae.refunds.filter((r) => r.status === "PENDING"), pendingTasks = () => Ae.tasks.filter((r) => r.status === "ACTIVE" && Number(r.completed_count || 0) < Number(r.recipients_count || 0));
 function bd(r, e) {
   const t = r === "tickets" ? bu().length : r === "tasks" ? pendingTasks().length : r === "replacement" ? Ae.replacements.filter((x) => x.status === "PENDING").length : 0;
   return t ? `${e} <b class="navbadge">${t}</b>` : e;
@@ -500,7 +512,7 @@ function Ya(r, e, t = "") {
   return `<header class="topbar"><div><h2>${r}</h2><p class="muted">${e}</p></div><div class="actions">${t}</div></header>`;
 }
 function Py() {
-  return Ae.page === "overview" ? Cy() : Ae.page === "attractions" ? Ty() : Ae.page === "workers" ? Ry() : Ae.page === "payroll" ? payrollPage() : Ae.page === "replacement" ? replacementPage() : Ae.page === "tasks" ? taskPage() : Ae.page === "notices" ? noticePage() : Ae.page === "tickets" ? Oy() : jy();
+  return Ae.page === "overview" ? Cy() : Ae.page === "attractions" ? Ty() : Ae.page === "workers" ? Ry() : Ae.page === "payroll" ? payrollPage() : Ae.page === "payroll_report" ? payrollReportPage() : Ae.page === "replacement" ? replacementPage() : Ae.page === "tasks" ? taskPage() : Ae.page === "notices" ? noticePage() : Ae.page === "tickets" ? Oy() : jy();
 }
 function Cy() {
   const tickets = _u(), stats = wu(tickets), refunds = bu(), tasks = pendingTasks();
@@ -560,6 +572,19 @@ function Iy() {
 function Su(r, e, t = false) {
   return `<section class="card"><div class="cardhead"><h3>${e}</h3><span class="muted">${r.length} \u0437\u0430\u043F\u0438\u0441\u0435\u0439</span></div><div class="tablewrap"><table class="table"><thead><tr><th>\u0411\u0438\u043B\u0435\u0442</th><th>\u0412\u0440\u0435\u043C\u044F \u0421\u0430\u043C\u0430\u0440\u044B</th><th>\u0421\u043E\u0442\u0440\u0443\u0434\u043D\u0438\u043A</th><th>\u041E\u043F\u043B\u0430\u0442\u0430</th><th>\u0421\u0443\u043C\u043C\u0430</th><th>\u0421\u0442\u0430\u0442\u0443\u0441</th>${t ? "<th></th>" : ""}</tr></thead><tbody>${r.length ? r.map((n) => `<tr><td><strong>${Mt(n.attraction_name)} \u2116${n.ticket_no}</strong>${n.free_reason ? `<br><small>${Mt(n.free_reason)}</small>` : ""}${n.offline ? '<br><span class="offline-tag">\u0441\u0438\u043D\u0445\u0440. \u043F\u043E\u0441\u043B\u0435 \u043E\u0444\u043B\u0430\u0439\u043D\u0430</span>' : ""}</td><td>${El(n.sold_at || n.created_at)}</td><td>${Mt(n.worker_name)}</td><td>${Zp(n.payment)}</td><td class="amount">${dr(n.price)}</td><td>${Qp(n.status)}</td>${t ? `<td>${n.status === "VALID" ? `<button class="btn red small" data-action="ticket-action" data-id="${n.id}" data-kind="CANCELLED">\u041E\u0442\u043C\u0435\u043D\u0430 \u043E\u0448\u0438\u0431\u043A\u0438</button>` : n.status === "REFUNDED" ? `<button class="btn gold small" data-action="reverse-refund" data-id="${n.id}">Отменить возврат</button>` : ""}</td>` : ""}</tr>`).join("") : '<tr><td colspan="7" class="empty">\u0411\u0438\u043B\u0435\u0442\u043E\u0432 \u043F\u043E\u043A\u0430 \u043D\u0435\u0442</td></tr>'}</tbody></table></div></section>`;
 }
+function reportKindTabs() {
+  return `<div class="report-kind-tabs"><button class="btn ${Ae.page === "reports" ? "gold" : "ghost"}" data-report-mode="games">Отчёты по играм</button><button class="btn ${Ae.page === "payroll_report" ? "gold" : "ghost"}" data-report-mode="payroll">Отчёт по зарплате</button></div>`;
+}
+function payrollReportPage() {
+  const dates = getPayrollReportDates(), byKey = new Map();
+  const add = (row, half) => { const key = row.worker_id || `name:${row.worker_name}`, item = byKey.get(key) || { worker_name: row.worker_name, first: null, second: null }; item[half] = row; byKey.set(key, item); };
+  Ae.payrollReportFirst.forEach((row) => add(row, "first")); Ae.payrollReportSecond.forEach((row) => add(row, "second"));
+  const rows = [...byKey.values()].sort((a,b) => String(a.worker_name).localeCompare(String(b.worker_name), "ru"));
+  const num = (row, field) => Number(row?.[field] || 0), hours = (row) => (num(row, "duration_minutes") / 60).toFixed(2), combined = (item, field) => num(item.first, field) + num(item.second, field);
+  const body = rows.map((item) => `<tr><td><strong>${Mt(item.worker_name)}</strong></td><td>${hours(item.first)}</td><td>${dr(num(item.first,"bonus"))}</td><td class="amount">${dr(num(item.first,"total_amount"))}</td><td>${hours(item.second)}</td><td>${dr(num(item.second,"bonus"))}</td><td class="amount">${dr(num(item.second,"total_amount"))}</td><td>${(combined(item,"duration_minutes")/60).toFixed(2)}</td><td>${dr(combined(item,"bonus"))}</td><td class="amount">${dr(combined(item,"total_amount"))}</td></tr>`).join("") || '<tr><td colspan="10" class="empty">За выбранный месяц записей пока нет</td></tr>';
+  const totals = rows.reduce((acc,item) => { acc.firstMinutes += num(item.first,"duration_minutes"); acc.firstBonus += num(item.first,"bonus"); acc.firstPay += num(item.first,"total_amount"); acc.secondMinutes += num(item.second,"duration_minutes"); acc.secondBonus += num(item.second,"bonus"); acc.secondPay += num(item.second,"total_amount"); return acc; }, {firstMinutes:0,firstBonus:0,firstPay:0,secondMinutes:0,secondBonus:0,secondPay:0});
+  return `${Ya("Отчёт по зарплате", "Отдельный расчёт 1–15 и 16–конец месяца, как в Excel")}${reportKindTabs()}<section class="card"><div class="cardhead"><div><h3>Итоги по заработной плате</h3><p class="muted">Один сотрудник — одна строка</p></div><div class="field" style="margin:0;min-width:180px"><label>Месяц</label><input id="payroll-report-month" type="month" min="2026-09" value="${Mt(Ae.payrollReportMonth)}"></div></div><section class="grid" style="margin-bottom:16px"><div class="metric blue"><span>К ВЫПЛАТЕ 1–15</span><strong>${dr(totals.firstPay)}</strong></div><div class="metric goldtone"><span>К ВЫПЛАТЕ 16–${dates.last}</span><strong>${dr(totals.secondPay)}</strong></div><div class="metric greentone"><span>ВСЕГО ЗА МЕСЯЦ</span><strong>${dr(totals.firstPay+totals.secondPay)}</strong></div><div class="metric"><span>СОТРУДНИКОВ</span><strong>${rows.length}</strong></div></section><div class="tablewrap"><table class="table salary-report-sheet"><thead><tr><th>Имя сотрудника</th><th>Часы 1–15</th><th>Бонус 1–15</th><th>К выплате 1–15</th><th>Часы 16–${dates.last}</th><th>Бонус 16–${dates.last}</th><th>К выплате 16–${dates.last}</th><th>Всего часов</th><th>Всего бонус</th><th>Всего к выплате</th></tr></thead><tbody>${body}</tbody><tfoot><tr><td>ИТОГО</td><td>${(totals.firstMinutes/60).toFixed(2)}</td><td>${dr(totals.firstBonus)}</td><td>${dr(totals.firstPay)}</td><td>${(totals.secondMinutes/60).toFixed(2)}</td><td>${dr(totals.secondBonus)}</td><td>${dr(totals.secondPay)}</td><td>${((totals.firstMinutes+totals.secondMinutes)/60).toFixed(2)}</td><td>${dr(totals.firstBonus+totals.secondBonus)}</td><td>${dr(totals.firstPay+totals.secondPay)}</td></tr></tfoot></table></div></section>`;
+}
 function jy() {
   const dayId = Number(Ae.reportDayId || Ae.days[0]?.id), day = Ae.days.find((row) => Number(row.id) === dayId);
   const attractionId = Number(Ae.reportAttractionId || Ae.attractions.find((row) => row.active)?.id || Ae.attractions[0]?.id);
@@ -595,6 +620,9 @@ function Fy() {
   document.querySelectorAll("[data-page]").forEach((e) => e.onclick = () => {
     Ae.page = e.dataset.page, Wa();
   }), document.querySelectorAll("[data-action]").forEach((e) => e.onclick = () => Dy(e.dataset));
+  document.querySelectorAll("[data-report-mode]").forEach((button) => button.onclick = () => { Ae.page = button.dataset.reportMode === "payroll" ? "payroll_report" : "reports"; Wa(); });
+  const payrollReportMonth = document.querySelector("#payroll-report-month");
+  payrollReportMonth && (payrollReportMonth.onchange = async () => { Ae.payrollReportMonth = payrollReportMonth.value; payrollReportMonth.disabled = true; await Jr(); });
   const r = document.querySelector("#report-day");
   r && (r.onchange = async () => { Ae.reportDayId = Number(r.value); r.disabled = true; await loadTicketsForDays([Ae.day?.id, Ae.reportDayId]); Wa(); });
   document.querySelectorAll("[data-report-attraction]").forEach((button) => button.onclick = () => { Ae.reportAttractionId = Number(button.dataset.reportAttraction); Wa(); });
