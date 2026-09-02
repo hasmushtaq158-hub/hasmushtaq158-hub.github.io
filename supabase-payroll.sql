@@ -95,7 +95,7 @@ create or replace function public.manager_finish_payroll_entry(
 )
 returns bigint language plpgsql security definer set search_path=public
 as $function$
-declare v_entry public.payroll_entries%rowtype; v_interval interval; v_minutes integer; v_rate numeric(10,2); v_base numeric(12,2); v_total numeric(12,2); v_attraction text;
+declare v_entry public.payroll_entries%rowtype; v_interval interval; v_minutes integer; v_rate numeric(10,2); v_base numeric(12,2); v_total numeric(12,2); v_attraction text; v_worker_name text;
 begin
   if not public.park_is_manager() then raise exception 'MANAGER_REQUIRED'; end if;
   if coalesce(p_bonus,0)<0 or coalesce(p_deduction,0)<0 then raise exception 'INVALID_ADJUSTMENT'; end if;
@@ -104,9 +104,10 @@ begin
   v_entry.day_type:=coalesce(p_day_type,v_entry.day_type);
   if v_entry.day_type not in ('NORMAL','HOLIDAY') then raise exception 'INVALID_DAY_TYPE'; end if;
   select name into v_attraction from public.attractions where id=v_entry.attraction_id;
+  select display_name into v_worker_name from public.profiles where id=v_entry.worker_id;
   v_interval:=p_ended_time-v_entry.started_time; if v_interval<=interval '0' then v_interval:=v_interval+interval '1 day'; end if;
   v_minutes:=round(extract(epoch from v_interval)/60)::integer; if v_minutes<=0 or v_minutes>960 then raise exception 'INVALID_WORK_DURATION'; end if;
-  if position('колесо победы' in lower(v_attraction))>0 then v_rate:=case when v_entry.day_type='HOLIDAY' then 200 else 180 end; else v_rate:=case when v_entry.day_type='HOLIDAY' then 180 else 150 end; end if;
+  if position('кристиан' in lower(coalesce(v_worker_name,'')))>0 and position('марин' in lower(coalesce(v_worker_name,'')))>0 then v_rate:=200; elsif position('колесо победы' in lower(v_attraction))>0 then v_rate:=case when v_entry.day_type='HOLIDAY' then 200 else 180 end; else v_rate:=case when v_entry.day_type='HOLIDAY' then 180 else 150 end; end if;
   v_base:=round(v_minutes::numeric/60*v_rate,2); v_total:=round(v_base+coalesce(p_bonus,0)-coalesce(p_deduction,0),2);
   update public.payroll_entries set ended_time=p_ended_time,duration_minutes=v_minutes,hourly_rate=v_rate,base_amount=v_base,
     bonus=coalesce(p_bonus,0),deduction=coalesce(p_deduction,0),total_amount=v_total,note=coalesce(nullif(trim(p_note),''),note),day_type=v_entry.day_type,status='ACTIVE'
@@ -138,6 +139,7 @@ declare
   v_total numeric(12,2);
   v_id bigint;
   v_attraction text;
+  v_worker_name text;
 begin
   if not public.park_is_manager() then raise exception 'MANAGER_REQUIRED'; end if;
   if p_work_date < date '2026-09-01' then raise exception 'PAYROLL_STARTS_2026_09_01'; end if;
@@ -148,6 +150,7 @@ begin
     raise exception 'PAYROLL_ALREADY_RECORDED';
   end if;
   select name into v_attraction from public.attractions where id=p_attraction_id;
+  select display_name into v_worker_name from public.profiles where id=p_worker_id;
   if v_attraction is null then raise exception 'ATTRACTION_NOT_FOUND'; end if;
 
   v_interval := p_ended_time - p_started_time;
@@ -155,7 +158,9 @@ begin
   v_minutes := round(extract(epoch from v_interval)/60)::integer;
   if v_minutes <= 0 or v_minutes > 960 then raise exception 'INVALID_WORK_DURATION'; end if;
 
-  if position('колесо победы' in lower(v_attraction)) > 0 then
+  if position('кристиан' in lower(v_worker_name)) > 0 and position('марин' in lower(v_worker_name)) > 0 then
+    v_rate := 200;
+  elsif position('колесо победы' in lower(v_attraction)) > 0 then
     v_rate := case when p_day_type='HOLIDAY' then 200 else 180 end;
   else
     v_rate := case when p_day_type='HOLIDAY' then 180 else 150 end;
@@ -195,7 +200,7 @@ begin
   if v_attraction is null then raise exception 'ATTRACTION_NOT_FOUND'; end if;
   v_interval:=p_ended_time-p_started_time; if v_interval<=interval '0' then v_interval:=v_interval+interval '1 day'; end if;
   v_minutes:=round(extract(epoch from v_interval)/60)::integer; if v_minutes<=0 or v_minutes>960 then raise exception 'INVALID_WORK_DURATION'; end if;
-  if position('колесо победы' in lower(v_attraction))>0 then v_rate:=case when p_day_type='HOLIDAY' then 200 else 180 end; else v_rate:=case when p_day_type='HOLIDAY' then 180 else 150 end; end if;
+  if position('кристиан' in lower(p_display_name))>0 and position('марин' in lower(p_display_name))>0 then v_rate:=200; elsif position('колесо победы' in lower(v_attraction))>0 then v_rate:=case when p_day_type='HOLIDAY' then 200 else 180 end; else v_rate:=case when p_day_type='HOLIDAY' then 180 else 150 end; end if;
   v_base:=round(v_minutes::numeric/60*v_rate,2); v_total:=round(v_base+coalesce(p_bonus,0)-coalesce(p_deduction,0),2);
   insert into public.payroll_entries(payroll_person_id,work_date,attraction_id,started_time,ended_time,duration_minutes,day_type,hourly_rate,base_amount,bonus,deduction,total_amount,note,created_by)
   values(v_person_id,p_work_date,p_attraction_id,p_started_time,p_ended_time,v_minutes,p_day_type,v_rate,v_base,coalesce(p_bonus,0),coalesce(p_deduction,0),v_total,nullif(trim(p_note),''),auth.uid()) returning id into v_id;
@@ -316,6 +321,19 @@ grant execute on function public.manager_set_open_payroll_day_type(date,text) to
 grant execute on function public.manager_finish_payroll_entry(bigint,time,numeric,numeric,text,text) to authenticated;
 grant execute on function public.manager_add_external_payroll_entry(text,date,bigint,time,time,text,numeric,numeric,text) to authenticated;
 grant execute on function public.manager_cancel_payroll_entry(bigint) to authenticated;
+
+create or replace function public.manager_database_storage()
+returns table(used_bytes bigint,limit_bytes bigint,used_mb numeric,limit_mb numeric,used_percent numeric)
+language plpgsql security definer set search_path=public
+as $function$
+declare v_used bigint; v_limit constant bigint:=524288000;
+begin
+  if not public.park_is_manager() then raise exception 'MANAGER_REQUIRED'; end if;
+  select pg_database_size(current_database()) into v_used;
+  return query select v_used,v_limit,round(v_used::numeric/1048576,1),round(v_limit::numeric/1048576,0),round(v_used::numeric/v_limit*100,1);
+end;$function$;
+revoke all on function public.manager_database_storage() from public;
+grant execute on function public.manager_database_storage() to authenticated;
 grant execute on function public.manager_payroll_entries(date,date) to authenticated;
 grant execute on function public.manager_payroll_summary(date,date) to authenticated;
 grant execute on function public.worker_my_payroll(date,date) to authenticated;
