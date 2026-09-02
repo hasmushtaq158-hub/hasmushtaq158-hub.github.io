@@ -34,22 +34,73 @@ create policy payroll_people_no_direct_access on public.payroll_people for all t
 
 alter table public.payroll_entries add column if not exists payroll_person_id bigint references public.payroll_people(id);
 alter table public.payroll_entries alter column worker_id drop not null;
+alter table public.payroll_entries alter column ended_time drop not null;
+alter table public.payroll_entries alter column duration_minutes drop not null;
+alter table public.payroll_entries alter column hourly_rate drop not null;
+alter table public.payroll_entries alter column base_amount drop not null;
+alter table public.payroll_entries alter column total_amount drop not null;
+alter table public.payroll_entries drop constraint if exists payroll_entries_status_check;
+alter table public.payroll_entries add constraint payroll_entries_status_check check(status in ('OPEN','ACTIVE','CANCELLED'));
 alter table public.payroll_entries drop constraint if exists payroll_entries_one_person_check;
 alter table public.payroll_entries add constraint payroll_entries_one_person_check check(num_nonnulls(worker_id,payroll_person_id)=1);
-create unique index if not exists payroll_entries_one_active_person_day_idx
-  on public.payroll_entries(payroll_person_id,work_date) where status='ACTIVE' and payroll_person_id is not null;
+drop index if exists public.payroll_entries_one_active_person_day_idx;
+create unique index payroll_entries_one_active_person_day_idx
+  on public.payroll_entries(payroll_person_id,work_date) where status in ('OPEN','ACTIVE') and payroll_person_id is not null;
 
 create index if not exists payroll_entries_worker_date_idx
   on public.payroll_entries(worker_id,work_date desc);
 create index if not exists payroll_entries_date_idx
   on public.payroll_entries(work_date,status);
-create unique index if not exists payroll_entries_one_active_worker_day_idx
-  on public.payroll_entries(worker_id,work_date) where status='ACTIVE';
+drop index if exists public.payroll_entries_one_active_worker_day_idx;
+create unique index payroll_entries_one_active_worker_day_idx
+  on public.payroll_entries(worker_id,work_date) where status in ('OPEN','ACTIVE');
 
 alter table public.payroll_entries enable row level security;
 drop policy if exists payroll_entries_no_direct_access on public.payroll_entries;
 create policy payroll_entries_no_direct_access on public.payroll_entries
   for all to authenticated using(false) with check(false);
+
+create or replace function public.manager_start_payroll_entry(
+  p_worker_id uuid,p_work_date date,p_attraction_id bigint,p_started_time time,
+  p_day_type text,p_note text default null
+)
+returns bigint language plpgsql security definer set search_path=public
+as $function$
+declare v_id bigint;
+begin
+  if not public.park_is_manager() then raise exception 'MANAGER_REQUIRED'; end if;
+  if p_work_date<date '2026-09-01' then raise exception 'PAYROLL_STARTS_2026_09_01'; end if;
+  if p_day_type not in ('NORMAL','HOLIDAY') then raise exception 'INVALID_DAY_TYPE'; end if;
+  if not exists(select 1 from public.profiles where id=p_worker_id and role='worker') then raise exception 'WORKER_NOT_FOUND'; end if;
+  if not exists(select 1 from public.attractions where id=p_attraction_id) then raise exception 'ATTRACTION_NOT_FOUND'; end if;
+  if exists(select 1 from public.payroll_entries where worker_id=p_worker_id and work_date=p_work_date and status in ('OPEN','ACTIVE')) then raise exception 'PAYROLL_ALREADY_RECORDED'; end if;
+  insert into public.payroll_entries(worker_id,work_date,attraction_id,started_time,day_type,bonus,deduction,note,status,created_by)
+  values(p_worker_id,p_work_date,p_attraction_id,p_started_time,p_day_type,0,0,nullif(trim(p_note),''),'OPEN',auth.uid())
+  returning id into v_id;
+  return v_id;
+end;$function$;
+
+create or replace function public.manager_finish_payroll_entry(
+  p_entry_id bigint,p_ended_time time,p_bonus numeric default 0,p_deduction numeric default 0,p_note text default null
+)
+returns bigint language plpgsql security definer set search_path=public
+as $function$
+declare v_entry public.payroll_entries%rowtype; v_interval interval; v_minutes integer; v_rate numeric(10,2); v_base numeric(12,2); v_total numeric(12,2); v_attraction text;
+begin
+  if not public.park_is_manager() then raise exception 'MANAGER_REQUIRED'; end if;
+  if coalesce(p_bonus,0)<0 or coalesce(p_deduction,0)<0 then raise exception 'INVALID_ADJUSTMENT'; end if;
+  select * into v_entry from public.payroll_entries where id=p_entry_id and status='OPEN' for update;
+  if not found then raise exception 'OPEN_PAYROLL_ENTRY_NOT_FOUND'; end if;
+  select name into v_attraction from public.attractions where id=v_entry.attraction_id;
+  v_interval:=p_ended_time-v_entry.started_time; if v_interval<=interval '0' then v_interval:=v_interval+interval '1 day'; end if;
+  v_minutes:=round(extract(epoch from v_interval)/60)::integer; if v_minutes<=0 or v_minutes>960 then raise exception 'INVALID_WORK_DURATION'; end if;
+  if position('колесо победы' in lower(v_attraction))>0 then v_rate:=case when v_entry.day_type='HOLIDAY' then 200 else 180 end; else v_rate:=case when v_entry.day_type='HOLIDAY' then 180 else 150 end; end if;
+  v_base:=round(v_minutes::numeric/60*v_rate,2); v_total:=round(v_base+coalesce(p_bonus,0)-coalesce(p_deduction,0),2);
+  update public.payroll_entries set ended_time=p_ended_time,duration_minutes=v_minutes,hourly_rate=v_rate,base_amount=v_base,
+    bonus=coalesce(p_bonus,0),deduction=coalesce(p_deduction,0),total_amount=v_total,note=coalesce(nullif(trim(p_note),''),note),status='ACTIVE'
+  where id=p_entry_id;
+  return p_entry_id;
+end;$function$;
 
 create or replace function public.manager_add_payroll_entry(
   p_worker_id uuid,
@@ -81,7 +132,7 @@ begin
   if p_day_type not in ('NORMAL','HOLIDAY') then raise exception 'INVALID_DAY_TYPE'; end if;
   if coalesce(p_bonus,0) < 0 or coalesce(p_deduction,0) < 0 then raise exception 'INVALID_ADJUSTMENT'; end if;
   if not exists(select 1 from public.profiles where id=p_worker_id and role='worker') then raise exception 'WORKER_NOT_FOUND'; end if;
-  if exists(select 1 from public.payroll_entries where worker_id=p_worker_id and work_date=p_work_date and status='ACTIVE') then
+  if exists(select 1 from public.payroll_entries where worker_id=p_worker_id and work_date=p_work_date and status in ('OPEN','ACTIVE')) then
     raise exception 'PAYROLL_ALREADY_RECORDED';
   end if;
   select name into v_attraction from public.attractions where id=p_attraction_id;
@@ -127,7 +178,7 @@ begin
   insert into public.payroll_people(display_name,created_by) values(trim(p_display_name),auth.uid())
   on conflict((lower(trim(display_name)))) do update set display_name=excluded.display_name
   returning id into v_person_id;
-  if exists(select 1 from public.payroll_entries where payroll_person_id=v_person_id and work_date=p_work_date and status='ACTIVE') then raise exception 'PAYROLL_ALREADY_RECORDED'; end if;
+  if exists(select 1 from public.payroll_entries where payroll_person_id=v_person_id and work_date=p_work_date and status in ('OPEN','ACTIVE')) then raise exception 'PAYROLL_ALREADY_RECORDED'; end if;
   select name into v_attraction from public.attractions where id=p_attraction_id;
   if v_attraction is null then raise exception 'ATTRACTION_NOT_FOUND'; end if;
   v_interval:=p_ended_time-p_started_time; if v_interval<=interval '0' then v_interval:=v_interval+interval '1 day'; end if;
@@ -148,7 +199,7 @@ as $function$
 begin
   if not public.park_is_manager() then raise exception 'MANAGER_REQUIRED'; end if;
   update public.payroll_entries set status='CANCELLED',cancelled_at=now(),cancelled_by=auth.uid()
-  where id=p_entry_id and status='ACTIVE';
+  where id=p_entry_id and status in ('OPEN','ACTIVE');
   if not found then raise exception 'PAYROLL_ENTRY_NOT_FOUND'; end if;
 end;
 $function$;
@@ -248,6 +299,8 @@ as $function$
 $function$;
 
 grant execute on function public.manager_add_payroll_entry(uuid,date,bigint,time,time,text,numeric,numeric,text) to authenticated;
+grant execute on function public.manager_start_payroll_entry(uuid,date,bigint,time,text,text) to authenticated;
+grant execute on function public.manager_finish_payroll_entry(bigint,time,numeric,numeric,text) to authenticated;
 grant execute on function public.manager_add_external_payroll_entry(text,date,bigint,time,time,text,numeric,numeric,text) to authenticated;
 grant execute on function public.manager_cancel_payroll_entry(bigint) to authenticated;
 grant execute on function public.manager_payroll_entries(date,date) to authenticated;
