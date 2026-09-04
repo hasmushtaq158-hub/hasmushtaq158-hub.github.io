@@ -282,6 +282,10 @@ const Sy = "./DejaVuSans.ttf", Ll = document.querySelector("#app"), qc = documen
   payrollReportSecond: [],
   reportPayrollSummary: [],
   reportPayrollDate: null,
+  workerPresence: [],
+  payrollLocks: [],
+  clientErrors: [],
+  auditLog: [],
   channel: null,
   recovering: false,
   lastPendingIds: null,
@@ -394,7 +398,7 @@ async function loadStorageUsage() {
 async function t0() {
   const payrollPeriod = getPayrollPeriod(), payrollFrom = Ae.payrollFrom || payrollPeriod.from, payrollTo = Ae.payrollTo || payrollPeriod.to;
   const reportDates = getPayrollReportDates();
-  const [r, e, t, i, s, sale, assignments, tasks, replacementDashboard, dailyReplacement, replacementSettings, notices, payrollEntries, payrollSummary, payrollReportFirst, payrollReportSecond] = await Promise.all([
+  const [r, e, t, i, s, sale, assignments, tasks, replacementDashboard, dailyReplacement, replacementSettings, notices, payrollEntries, payrollSummary, payrollReportFirst, payrollReportSecond, workerPresence, payrollLocks, clientErrors, auditLog] = await Promise.all([
     Ae.client.from("business_days").select("id,label,daily_code,status,opened_at,closed_at").order("id", { ascending: false }).limit(120),
     Ae.client.from("attractions").select("*").order("id"),
     Ae.client.from("profiles").select("id,employee_code,display_name,active,must_change_pin,created_at").eq("role", "worker").order("display_name"),
@@ -410,9 +414,13 @@ async function t0() {
     Ae.client.rpc("manager_payroll_entries", { p_from: payrollFrom, p_to: payrollTo }),
     Ae.client.rpc("manager_payroll_summary", { p_from: payrollFrom, p_to: payrollTo }),
     Ae.client.rpc("manager_payroll_summary", { p_from: reportDates.firstFrom, p_to: reportDates.firstTo }),
-    Ae.client.rpc("manager_payroll_summary", { p_from: reportDates.secondFrom, p_to: reportDates.secondTo })
+    Ae.client.rpc("manager_payroll_summary", { p_from: reportDates.secondFrom, p_to: reportDates.secondTo }),
+    Ae.client.rpc("manager_worker_presence", {}),
+    Ae.client.rpc("manager_payroll_period_locks", {}),
+    Ae.client.rpc("manager_client_errors", {}),
+    Ae.client.rpc("manager_audit_log", { p_limit: 100 })
   ]);
-  [r, e, t, i].find((l) => l.error)?.error && Er("\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043E\u0431\u043D\u043E\u0432\u0438\u0442\u044C \u0434\u0430\u043D\u043D\u044B\u0435"), Ae.days = r.data || [], Ae.day = Ae.days.find((l) => l.status === "OPEN") || null, Ae.attractions = e.data || [], Ae.workers = t.data || [], Ae.shifts = i.data || [], Ae.saleOptions = sale.data || [], Ae.assignments = assignments.data || [], Ae.tasks = tasks.data || [], Ae.replacements = replacementDashboard.data || [], Ae.dailyReplacement = dailyReplacement.data || [], Ae.replacementSettings = replacementSettings.data || [], Ae.notices = notices.data || [], Ae.payrollEntries = payrollEntries.data || [], Ae.payrollSummary = payrollSummary.data || [], Ae.payrollReportFirst = payrollReportFirst.data || [], Ae.payrollReportSecond = payrollReportSecond.data || [], Ae.payrollFrom = payrollFrom, Ae.payrollTo = payrollTo;
+  [r, e, t, i].find((l) => l.error)?.error && Er("\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043E\u0431\u043D\u043E\u0432\u0438\u0442\u044C \u0434\u0430\u043D\u043D\u044B\u0435"), Ae.days = r.data || [], Ae.day = Ae.days.find((l) => l.status === "OPEN") || null, Ae.attractions = e.data || [], Ae.workers = t.data || [], Ae.shifts = i.data || [], Ae.saleOptions = sale.data || [], Ae.assignments = assignments.data || [], Ae.tasks = tasks.data || [], Ae.replacements = replacementDashboard.data || [], Ae.dailyReplacement = dailyReplacement.data || [], Ae.replacementSettings = replacementSettings.data || [], Ae.notices = notices.data || [], Ae.payrollEntries = payrollEntries.data || [], Ae.payrollSummary = payrollSummary.data || [], Ae.payrollReportFirst = payrollReportFirst.data || [], Ae.payrollReportSecond = payrollReportSecond.data || [], Ae.workerPresence = workerPresence.data || [], Ae.payrollLocks = payrollLocks.data || [], Ae.clientErrors = clientErrors.data || [], Ae.auditLog = auditLog.data || [], Ae.payrollFrom = payrollFrom, Ae.payrollTo = payrollTo;
   const selectedReportDayId = Ae.reportDayId || Ae.days[0]?.id;
   await Promise.all([loadTicketsForDays([Ae.day?.id, selectedReportDayId]), loadReportDayPayroll(selectedReportDayId)]);
   const o = s.data || [];
@@ -450,7 +458,7 @@ function Jr() {
     await t0(), Wa();
   }, 350);
 }
-const yd = [["overview", "\u041E\u0431\u0437\u043E\u0440"], ["attractions", "\u0410\u0442\u0442\u0440\u0430\u043A\u0446\u0438\u043E\u043D\u044B"], ["workers", "\u0421\u043E\u0442\u0440\u0443\u0434\u043D\u0438\u043A\u0438"], ["payroll", "Зарплата"], ["replacement", "Замена"], ["tasks", "\u0417\u0430\u0434\u0430\u0447\u0438"], ["notices", "Нарушения"], ["tickets", "\u0411\u0438\u043B\u0435\u0442\u044B"], ["reports", "\u041E\u0442\u0447\u0451\u0442\u044B"], ["payroll_report", "Отчёт по зарплате"]], bu = () => Ae.refunds.filter((r) => r.status === "PENDING"), pendingTasks = () => Ae.tasks.filter((r) => r.status === "ACTIVE" && Number(r.completed_count || 0) < Number(r.recipients_count || 0));
+const yd = [["overview", "\u041E\u0431\u0437\u043E\u0440"], ["attractions", "\u0410\u0442\u0442\u0440\u0430\u043A\u0446\u0438\u043E\u043D\u044B"], ["workers", "\u0421\u043E\u0442\u0440\u0443\u0434\u043D\u0438\u043A\u0438"], ["payroll", "Зарплата"], ["replacement", "Замена"], ["tasks", "\u0417\u0430\u0434\u0430\u0447\u0438"], ["notices", "Нарушения"], ["tickets", "\u0411\u0438\u043B\u0435\u0442\u044B"], ["reports", "\u041E\u0442\u0447\u0451\u0442\u044B"], ["payroll_report", "Отчёт по зарплате"], ["system", "Система"]], bu = () => Ae.refunds.filter((r) => r.status === "PENDING"), pendingTasks = () => Ae.tasks.filter((r) => r.status === "ACTIVE" && Number(r.completed_count || 0) < Number(r.recipients_count || 0));
 function bd(r, e) {
   const t = r === "tickets" ? bu().length : r === "tasks" ? pendingTasks().length : r === "replacement" ? Ae.replacements.filter((x) => x.status === "PENDING").length : 0;
   return t ? `${e} <b class="navbadge">${t}</b>` : e;
@@ -535,13 +543,13 @@ function ticketsForAttraction(dayId, attractionId) {
 function Ya(r, e, t = "") {
   if (e === "Данные обновляются автоматически · время Самары") e = "Данные обновляются каждую минуту · время Самары";
   if (r === "Онлайн-обзор" && Ae.storageUsage) {
-    const usage = Ae.storageUsage, percent = Number(usage.used_percent || 0), tone = percent >= 90 ? "closed" : "open", warning = percent >= 90 ? " · Критично" : percent >= 75 ? " · Мало места" : "";
+    const usage = Ae.storageUsage, percent = Number(usage.used_percent || 0), tone = percent >= 85 ? "closed" : percent >= 70 ? "waiting" : "open", warning = percent >= 95 ? " · Критично" : percent >= 85 ? " · Почти заполнено" : percent >= 70 ? " · Внимание" : "";
     t = `<span class="status ${tone}" title="Проверяется при входе и каждые 6 часов">Хранилище: ${percent.toFixed(1)}% · ${Number(usage.used_mb || 0).toFixed(1)}/${Number(usage.limit_mb || 500).toFixed(0)} МБ${warning}</span>${t}`;
   }
   return `<header class="topbar"><div><h2>${r}</h2><p class="muted">${e}</p></div><div class="actions">${t}</div></header>`;
 }
 function Py() {
-  return Ae.page === "overview" ? Cy() : Ae.page === "attractions" ? Ty() : Ae.page === "workers" ? Ry() : Ae.page === "payroll" ? payrollPage() : Ae.page === "payroll_report" ? payrollReportPage() : Ae.page === "replacement" ? replacementPage() : Ae.page === "tasks" ? taskPage() : Ae.page === "notices" ? noticePage() : Ae.page === "tickets" ? Oy() : jy();
+  return Ae.page === "overview" ? Cy() : Ae.page === "attractions" ? Ty() : Ae.page === "workers" ? Ry() : Ae.page === "payroll" ? payrollPage() : Ae.page === "payroll_report" ? payrollReportPage() : Ae.page === "replacement" ? replacementPage() : Ae.page === "tasks" ? taskPage() : Ae.page === "notices" ? noticePage() : Ae.page === "tickets" ? Oy() : Ae.page === "system" ? systemPage() : jy();
 }
 function Cy() {
   const tickets = _u(), stats = wu(tickets), refunds = bu(), tasks = pendingTasks();
@@ -554,8 +562,15 @@ function Ty() {
   return `${Ya("Аттракционы", "Для каждой игры отдельно: цена, способы продажи и работающие сотрудники.", '<button class="btn gold" data-action="edit-attraction">+ Добавить игру</button>')}<section class="attraction-board">${cards}</section>`;
 }
 function Ry() {
-  const rows = Ae.workers.map((row) => { const assignment = assignmentForWorker(row.id); return `<tr><td><strong>${Mt(row.display_name)}</strong><small class="block">${Mt(row.employee_code)}</small></td><td>${assignment ? `<span class="assignment-name">${Mt(assignment.attraction_name)}</span>` : '<span class="muted">Не назначен</span>'}</td><td><span class="status ${row.active ? "open" : "closed"}"><i class="dot"></i>${row.active ? "Активен" : "Отключён"}</span></td><td>${row.must_change_pin ? "Временный" : "Личный"}</td><td class="actions"><button class="btn gold small" data-action="assign-worker" data-worker="${row.id}">${assignment ? "Переместить" : "Назначить"}</button>${assignment ? `<button class="btn ghost small" data-action="unassign-worker" data-worker="${row.id}">Снять</button>` : ""}<button class="btn ghost small" data-action="reset-pin" data-id="${row.id}">Сбросить PIN</button><button class="btn ${row.active ? "red" : "green"} small" data-action="toggle-worker" data-id="${row.id}" data-active="${!row.active}">${row.active ? "Отключить" : "Включить"}</button></td></tr>`; }).join("");
-  return `${Ya("Сотрудники", "Директор назначает, перемещает и меняет сотрудников местами в течение дня.", `<button class="btn ghost" data-action="swap-workers" ${Ae.day ? "" : "disabled"}>Поменять местами</button><button class="btn gold" data-action="add-worker">+ Добавить</button>`)}<section class="card"><div class="tablewrap"><table class="table"><thead><tr><th>Сотрудник</th><th>Игра сегодня</th><th>Состояние</th><th>PIN</th><th></th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
+  const activeWorkers = Ae.workers.filter((row) => row.active), archivedCount = Ae.workers.length-activeWorkers.length;
+  const rows = activeWorkers.map((row) => { const assignment = assignmentForWorker(row.id), presence = Ae.workerPresence.find((item) => String(item.worker_id) === String(row.id)), online = Boolean(presence?.is_online); return `<tr><td><strong>${Mt(row.display_name)}</strong><small class="block">${Mt(row.employee_code)}</small></td><td>${assignment ? `<span class="assignment-name">${Mt(assignment.attraction_name)}</span>` : '<span class="muted">Не назначен</span>'}</td><td><span class="status ${online ? "open" : "closed"}"><i class="dot"></i>${online ? "Онлайн" : "Офлайн"}</span><small class="block">${presence?.last_seen_at ? `был ${El(presence.last_seen_at)}` : "ещё не входил"}</small></td><td>${row.must_change_pin ? "Временный" : "Личный"}</td><td class="actions"><button class="btn gold small" data-action="assign-worker" data-worker="${row.id}">${assignment ? "Переместить" : "Назначить"}</button>${assignment ? `<button class="btn ghost small" data-action="unassign-worker" data-worker="${row.id}">Снять</button>` : ""}<button class="btn ghost small" data-action="reset-pin" data-id="${row.id}">Сбросить PIN</button><button class="btn red small" data-action="archive-worker" data-id="${row.id}" data-name="${Mt(row.display_name)}">Удалить</button></td></tr>`; }).join("");
+  return `${Ya("Сотрудники", `Онлайн определяется по активности за последние 2 минуты${archivedCount ? ` · в архиве: ${archivedCount}` : ""}.`, `<button class="btn ghost" data-action="swap-workers" ${Ae.day ? "" : "disabled"}>Поменять местами</button><button class="btn gold" data-action="add-worker">+ Добавить</button>`)}<section class="card"><div class="tablewrap"><table class="table"><thead><tr><th>Сотрудник</th><th>Игра сегодня</th><th>Связь</th><th>PIN</th><th></th></tr></thead><tbody>${rows || '<tr><td colspan="5" class="empty">Активных сотрудников нет</td></tr>'}</tbody></table></div></section>`;
+}
+function systemPage() {
+  const unresolved = Ae.clientErrors.filter((row) => !row.resolved), online = Ae.workerPresence.filter((row) => row.is_online).length, usage = Ae.storageUsage || {};
+  const errorRows = Ae.clientErrors.map((row) => `<tr><td>${El(row.created_at)}</td><td>${Mt(row.worker_name || "—")}</td><td>${Mt(row.source)}</td><td>${Mt(row.message)}</td><td>${row.resolved ? '<span class="status open">Решено</span>' : `<button class="btn gold small" data-action="resolve-client-error" data-id="${row.id}">Отметить решённым</button>`}</td></tr>`).join("") || '<tr><td colspan="5" class="empty">Ошибок с устройств нет</td></tr>';
+  const auditRows = Ae.auditLog.slice(0,50).map((row) => `<tr><td>${El(row.created_at)}</td><td>${Mt(row.actor_name || "Система")}</td><td>${Mt(row.action)}</td><td>${Mt(row.entity_type)} #${Mt(row.entity_id)}</td></tr>`).join("") || '<tr><td colspan="4" class="empty">Журнал пока пуст</td></tr>';
+  return `${Ya("Система", "Состояние приложений, хранилища и журнал важных изменений.")}<section class="grid"><div class="metric blue"><span>РАБОТНИКИ ОНЛАЙН</span><strong>${online}</strong></div><div class="metric redtone"><span>НЕОБРАБОТАННЫЕ ОШИБКИ</span><strong>${unresolved.length}</strong></div><div class="metric goldtone"><span>ХРАНИЛИЩЕ</span><strong>${Number(usage.used_percent || 0).toFixed(1)}%</strong></div><div class="metric greentone"><span>ПОСЛЕДНЯЯ ПРОВЕРКА</span><strong style="font-size:16px">${El(new Date())}</strong></div></section><section class="card"><div class="cardhead"><h3>Ошибки синхронизации и устройств</h3><span class="status ${unresolved.length ? "closed" : "open"}">${unresolved.length ? `${unresolved.length} требуют внимания` : "Всё в порядке"}</span></div><div class="tablewrap"><table class="table"><thead><tr><th>Время</th><th>Сотрудник</th><th>Источник</th><th>Ошибка</th><th></th></tr></thead><tbody>${errorRows}</tbody></table></div></section><section class="card"><h3>Журнал изменений</h3><div class="tablewrap"><table class="table"><thead><tr><th>Время</th><th>Кто</th><th>Действие</th><th>Объект</th></tr></thead><tbody>${auditRows}</tbody></table></div></section>`;
 }
 function taskPage() {
   const tasks = Ae.tasks.filter((row) => !Ae.day || Number(row.day_id) === Number(Ae.day.id));
@@ -617,7 +632,9 @@ function payrollReportPage() {
   const num = (row, field) => Number(row?.[field] || 0), hours = (row) => (num(row, "duration_minutes") / 60).toFixed(2), combined = (item, field) => num(item.first, field) + num(item.second, field);
   const body = rows.map((item) => `<tr><td><strong>${Mt(item.worker_name)}</strong></td><td>${hours(item.first)}</td><td>${dr(num(item.first,"bonus"))}</td><td class="amount">${dr(num(item.first,"total_amount"))}</td><td>${hours(item.second)}</td><td>${dr(num(item.second,"bonus"))}</td><td class="amount">${dr(num(item.second,"total_amount"))}</td><td>${(combined(item,"duration_minutes")/60).toFixed(2)}</td><td>${dr(combined(item,"bonus"))}</td><td class="amount">${dr(combined(item,"total_amount"))}</td></tr>`).join("") || '<tr><td colspan="10" class="empty">За выбранный месяц записей пока нет</td></tr>';
   const totals = rows.reduce((acc,item) => { acc.firstMinutes += num(item.first,"duration_minutes"); acc.firstBonus += num(item.first,"bonus"); acc.firstPay += num(item.first,"total_amount"); acc.secondMinutes += num(item.second,"duration_minutes"); acc.secondBonus += num(item.second,"bonus"); acc.secondPay += num(item.second,"total_amount"); return acc; }, {firstMinutes:0,firstBonus:0,firstPay:0,secondMinutes:0,secondBonus:0,secondPay:0});
-  return `${Ya("Отчёт по зарплате", "Отдельный расчёт 1–15 и 16–конец месяца, как в Excel")}${reportKindTabs()}<section class="card"><div class="cardhead"><div><h3>Итоги по заработной плате</h3><p class="muted">Один сотрудник — одна строка</p></div><div class="field" style="margin:0;min-width:180px"><label>Месяц</label><input id="payroll-report-month" type="month" min="2026-09" value="${Mt(Ae.payrollReportMonth)}"></div></div><section class="grid" style="margin-bottom:16px"><div class="metric blue"><span>К ВЫПЛАТЕ 1–15</span><strong>${dr(totals.firstPay)}</strong></div><div class="metric goldtone"><span>К ВЫПЛАТЕ 16–${dates.last}</span><strong>${dr(totals.secondPay)}</strong></div><div class="metric greentone"><span>ВСЕГО ЗА МЕСЯЦ</span><strong>${dr(totals.firstPay+totals.secondPay)}</strong></div><div class="metric"><span>СОТРУДНИКОВ</span><strong>${rows.length}</strong></div></section><div class="tablewrap"><table class="table salary-report-sheet"><thead><tr><th>Имя сотрудника</th><th>Часы 1–15</th><th>Бонус 1–15</th><th>К выплате 1–15</th><th>Часы 16–${dates.last}</th><th>Бонус 16–${dates.last}</th><th>К выплате 16–${dates.last}</th><th>Всего часов</th><th>Всего бонус</th><th>Всего к выплате</th></tr></thead><tbody>${body}</tbody><tfoot><tr><td>ИТОГО</td><td>${(totals.firstMinutes/60).toFixed(2)}</td><td>${dr(totals.firstBonus)}</td><td>${dr(totals.firstPay)}</td><td>${(totals.secondMinutes/60).toFixed(2)}</td><td>${dr(totals.secondBonus)}</td><td>${dr(totals.secondPay)}</td><td>${((totals.firstMinutes+totals.secondMinutes)/60).toFixed(2)}</td><td>${dr(totals.firstBonus+totals.secondBonus)}</td><td>${dr(totals.firstPay+totals.secondPay)}</td></tr></tfoot></table></div></section>`;
+  const lockFor = (from,to) => Ae.payrollLocks.find((row) => row.period_from === from && row.period_to === to), firstLock = lockFor(dates.firstFrom,dates.firstTo), secondLock = lockFor(dates.secondFrom,dates.secondTo);
+  const lockButton = (from,to,lock) => `<button class="btn ${lock?.locked ? "red" : "green"} small" data-action="payroll-lock" data-from="${from}" data-to="${to}" data-locked="${lock?.locked ? "false" : "true"}">${lock?.locked ? "Разблокировать" : "Утвердить и закрыть"}</button>`;
+  return `${Ya("Отчёт по зарплате", "Отдельный расчёт 1–15 и 16–конец месяца, как в Excel")}${reportKindTabs()}<section class="card"><div class="cardhead"><div><h3>Итоги по заработной плате</h3><p class="muted">Один сотрудник — одна строка</p></div><div class="field" style="margin:0;min-width:180px"><label>Месяц</label><input id="payroll-report-month" type="month" min="2026-09" value="${Mt(Ae.payrollReportMonth)}"></div></div><div class="actions" style="margin-bottom:16px"><span class="status ${firstLock?.locked ? "closed" : "open"}">1–15: ${firstLock?.locked ? "закрыто" : "открыто"}</span>${lockButton(dates.firstFrom,dates.firstTo,firstLock)}<span class="status ${secondLock?.locked ? "closed" : "open"}">16–${dates.last}: ${secondLock?.locked ? "закрыто" : "открыто"}</span>${lockButton(dates.secondFrom,dates.secondTo,secondLock)}</div><section class="grid" style="margin-bottom:16px"><div class="metric blue"><span>К ВЫПЛАТЕ 1–15</span><strong>${dr(totals.firstPay)}</strong></div><div class="metric goldtone"><span>К ВЫПЛАТЕ 16–${dates.last}</span><strong>${dr(totals.secondPay)}</strong></div><div class="metric greentone"><span>ВСЕГО ЗА МЕСЯЦ</span><strong>${dr(totals.firstPay+totals.secondPay)}</strong></div><div class="metric"><span>СОТРУДНИКОВ</span><strong>${rows.length}</strong></div></section><div class="tablewrap"><table class="table salary-report-sheet"><thead><tr><th>Имя сотрудника</th><th>Часы 1–15</th><th>Бонус 1–15</th><th>К выплате 1–15</th><th>Часы 16–${dates.last}</th><th>Бонус 16–${dates.last}</th><th>К выплате 16–${dates.last}</th><th>Всего часов</th><th>Всего бонус</th><th>Всего к выплате</th></tr></thead><tbody>${body}</tbody><tfoot><tr><td>ИТОГО</td><td>${(totals.firstMinutes/60).toFixed(2)}</td><td>${dr(totals.firstBonus)}</td><td class="amount">${dr(totals.firstPay)}</td><td>${(totals.secondMinutes/60).toFixed(2)}</td><td>${dr(totals.secondBonus)}</td><td class="amount">${dr(totals.secondPay)}</td><td>${((totals.firstMinutes+totals.secondMinutes)/60).toFixed(2)}</td><td>${dr(totals.firstBonus+totals.secondBonus)}</td><td class="amount">${dr(totals.firstPay+totals.secondPay)}</td></tr></tfoot></table></div></section>`;
 }
 function jy() {
   const dayId = Number(Ae.reportDayId || Ae.days[0]?.id), day = Ae.days.find((row) => Number(row.id) === dayId);
@@ -698,7 +715,20 @@ async function Dy(r) {
     if (await Va("manager_cancel_payroll_entry", { p_entry_id: Number(r.id) })) return Jr();
   }
   if (r.action === "reset-pin") return $y(r.id);
-  if (r.action === "toggle-worker") return await Ae.client.from("profiles").update({ active: r.active === "true" }).eq("id", r.id), Jr();
+  if (r.action === "archive-worker") {
+    if (!confirm(`Удалить сотрудника «${r.name || ""}» из активного списка? История билетов и зарплаты сохранится.`)) return;
+    const reason = prompt("Причина удаления (необязательно):", "Больше не работает");
+    if (reason === null) return;
+    if (await Va("manager_archive_worker", { p_worker_id: r.id, p_reason: reason || null })) return Jr();
+  }
+  if (r.action === "resolve-client-error" && await Va("manager_resolve_client_error", { p_error_id: Number(r.id) })) return Jr();
+  if (r.action === "payroll-lock") {
+    const locking = r.locked === "true";
+    let reason = null;
+    if (locking) { if (!confirm(`Утвердить и закрыть зарплату за ${r.from} — ${r.to}? Изменения будут запрещены.`)) return; }
+    else { reason = prompt("Укажите причину разблокировки:", "Исправление данных"); if (reason === null) return; }
+    if (await Va("manager_set_payroll_period_lock", { p_from: r.from, p_to: r.to, p_locked: locking, p_reason: reason })) return Jr();
+  }
   if (r.action === "resolve-refund" && await Va("manager_resolve_refund_request", { p_request_id: Number(r.id), p_approve: r.approve === "true", p_note: null })) return Jr();
   if (r.action === "reverse-refund") {
     if (!confirm("Отменить возврат и снова сделать билет действительным?")) return;
