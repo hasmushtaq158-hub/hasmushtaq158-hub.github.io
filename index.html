@@ -212,6 +212,8 @@ to{opacity:1;transform:none}
 /* Clean administration layout — 2026-09-04 */
 .topbar p:empty{display:none}.sidebar .brand small{display:none}.topbar{align-items:center}.topbar h2{font-size:27px}.overview-metrics{margin-bottom:16px}.overview-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.overview-attraction{background:#fff;border-color:var(--line)}.overview-attraction .worker-chips{margin-top:7px}.overview-row-meta{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:13px;margin:12px 0}.overview-row-meta strong{color:var(--navy);font-size:16px}.text-link{border:0;background:transparent;color:#365f9a;font-weight:750;padding:7px;cursor:pointer}.main{padding-top:26px}.card{box-shadow:0 8px 24px #15233b0a}.metric{box-shadow:0 6px 18px #15233b08}
 @media(max-width:650px){.overview-grid{grid-template-columns:1fr}.topbar h2{font-size:28px}.topbar p{font-size:15px}.overview-metrics{grid-template-columns:1fr 1fr}.overview-metrics .metric{padding:16px 14px}.overview-metrics .metric strong{font-size:22px}.overview-attraction .btn{width:100%}}
+
+.game-choice-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;max-height:42vh;overflow:auto;padding:3px}.game-choice{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:13px;padding:11px;background:#f8fafc;cursor:pointer}.game-choice:has(input:checked){border-color:var(--gold);background:#fff8e5}.game-choice input{width:19px;height:19px;accent-color:var(--gold)}.game-choice span{display:grid;gap:3px}.game-choice small{color:var(--muted)}.game-choice-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:18px 0 10px}.game-choice-head>div{display:flex;gap:4px}.open-day-code{display:flex;justify-content:space-between;align-items:center;padding:12px 0}.open-day-code span{color:var(--muted);font-weight:700}.open-day-code .code{font-size:22px}.open-day-actions{margin-top:18px}@media(max-width:560px){.game-choice-grid{grid-template-columns:1fr;max-height:48vh}.game-choice-head{align-items:flex-start;flex-direction:column}.game-choice-head>div{width:100%;justify-content:space-between}.modal{padding:20px}}
 </style>
 </head>
 <body>
@@ -754,9 +756,31 @@ function Ys(r) {
   }, document.body.appendChild(e), e;
 }
 function By() {
-  const r = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1e6).padStart(6, "0"), e = Ys(`<h3>\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0440\u0430\u0431\u043E\u0447\u0438\u0439 \u0434\u0435\u043D\u044C?</h3><p>\u041A\u043E\u0434 \u0434\u043B\u044F \u0441\u043E\u0442\u0440\u0443\u0434\u043D\u0438\u043A\u043E\u0432:</p><div class="code">${r}</div><p class="notice">\u041D\u0443\u043C\u0435\u0440\u0430\u0446\u0438\u044F \u043A\u0430\u0436\u0434\u043E\u0433\u043E \u0430\u0442\u0442\u0440\u0430\u043A\u0446\u0438\u043E\u043D\u0430 \u043D\u0430\u0447\u043D\u0451\u0442\u0441\u044F \u0441 \u21161.</p><div class="actions"><button class="btn gold" id="ok">\u041E\u0442\u043A\u0440\u044B\u0442\u044C</button><button class="btn ghost" id="cancel">\u041E\u0442\u043C\u0435\u043D\u0430</button></div>`);
-  e.querySelector("#cancel").onclick = () => e.remove(), e.querySelector("#ok").onclick = async () => {
-    await Va("manager_open_day", { p_daily_code: r }) && (e.remove(), Jr());
+  const code = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1e6).padStart(6, "0");
+  const games = Ae.attractions.filter((row) => row.active);
+  const gameOptions = games.map((row) => `<label class="game-choice"><input type="checkbox" name="game" value="${row.id}" checked><span><strong>${Mt(row.name)}</strong><small>${dr(row.price)}</small></span></label>`).join("");
+  const modal = Ys(`<form id="open-day-form"><h3>Открыть рабочий день</h3><div class="open-day-code"><span>Код для сотрудников</span><strong class="code">${code}</strong></div><div class="game-choice-head"><strong>Выберите аттракционы</strong><div><button class="text-link" type="button" id="select-all">Выбрать все</button><button class="text-link" type="button" id="clear-all">Снять все</button></div></div><div class="game-choice-grid">${gameOptions}</div><div class="actions open-day-actions"><button class="btn gold" id="open-selected">Открыть выбранные</button><button class="btn ghost" type="button" id="cancel">Отмена</button></div></form>`);
+  const form = modal.querySelector("#open-day-form");
+  modal.querySelector("#cancel").onclick = () => modal.remove();
+  modal.querySelector("#select-all").onclick = () => form.querySelectorAll('[name="game"]').forEach((input) => input.checked = true);
+  modal.querySelector("#clear-all").onclick = () => form.querySelectorAll('[name="game"]').forEach((input) => input.checked = false);
+  form.onsubmit = async (event) => {
+    event.preventDefault();
+    const selected = new Set([...form.querySelectorAll('[name="game"]:checked')].map((input) => Number(input.value)));
+    if (!selected.size) return Er("Выберите хотя бы один аттракцион");
+    const button = modal.querySelector("#open-selected");
+    button.disabled = true;
+    button.textContent = "Открываем…";
+    const { error: openError } = await Ae.client.rpc("manager_open_day", { p_daily_code: code });
+    if (openError) { button.disabled = false; button.textContent = "Открыть выбранные"; return Er("Ошибка: " + openError.message); }
+    const { data: openDay, error: dayError } = await Ae.client.from("business_days").select("id").eq("status", "OPEN").order("id", { ascending: false }).limit(1).single();
+    if (dayError || !openDay) { modal.remove(); await Jr(); return Er("День открыт. Не удалось применить выбор игр"); }
+    const results = await Promise.all(games.map((game) => Ae.client.rpc("manager_set_attraction_open", { p_day_id: openDay.id, p_attraction_id: Number(game.id), p_open: selected.has(Number(game.id)) })));
+    const failed = results.filter((result) => result.error);
+    modal.remove();
+    await t0();
+    Wa();
+    Er(failed.length ? `День открыт. Не удалось изменить: ${failed.length}` : `Открыто игр: ${selected.size}`);
   };
 }
 function Uy() {
