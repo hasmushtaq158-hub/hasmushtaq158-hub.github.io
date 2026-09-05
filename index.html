@@ -31,12 +31,12 @@ h2{margin:0;font-size:23px}
 .btn.small{padding:8px 11px;min-height:36px;font-size:13px}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 .layout{min-height:100vh;display:grid;grid-template-columns:250px 1fr}
-.sidebar{background:var(--navy);color:#fff;padding:23px 18px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column}
+.sidebar{background:var(--navy);color:#fff;padding:23px 18px;position:sticky;top:0;height:100vh;height:100dvh;display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain}
 .sidebar .brand{padding:0 8px 24px}
-.nav{display:grid;gap:6px}
+.nav{display:grid;gap:6px;flex:none}
 .nav button{border:0;background:transparent;color:#bfc9d5;text-align:left;padding:12px 13px;border-radius:11px;font-weight:650}
 .nav button:hover,.nav button.active{background:#ffffff12;color:#fff}
-.userbox{margin-top:auto;border-top:1px solid #ffffff1c;padding:18px 8px 0;font-size:13px}
+.userbox{margin-top:18px;border-top:1px solid #ffffff1c;padding:18px 8px 0;font-size:13px}
 .main{padding:28px 30px 50px;max-width:1500px;width:100%;margin:0 auto}
 .topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;margin-bottom:24px}
 .topbar p{margin:5px 0 0}
@@ -181,8 +181,8 @@ to{opacity:1;transform:none}
 .report-toolbar .field{width:min(380px,100%)}
 .report-current{margin-bottom:14px;display:grid;gap:3px}
 .report-current span{font-size:11px;color:var(--muted);font-weight:800}
-.report-tabs{display:flex;gap:9px;overflow:auto;padding:3px 2px 12px}
-.report-tab{min-width:150px;border:1px solid var(--line);background:white;border-radius:14px;padding:12px;text-align:left;color:var(--navy)}
+.report-tabs{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:9px;overflow:visible;padding:3px 2px 12px}
+.report-tab{min-width:0;border:1px solid var(--line);background:white;border-radius:14px;padding:12px;text-align:left;color:var(--navy)}
 .report-tab strong,.report-tab span{display:block}
 .report-tab span{font-size:11px;color:var(--muted);margin-top:4px}
 .report-tab.active{border-color:var(--gold);background:#fff7df;box-shadow:0 6px 18px #e4a32120}
@@ -207,6 +207,7 @@ to{opacity:1;transform:none}
 @media(max-width:1100px){.attraction-board{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:1050px){.payment-breakdown{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:650px){.attraction-board{grid-template-columns:1fr}.check-grid{grid-template-columns:1fr}.task-item{align-items:flex-start;flex-wrap:wrap}.task-body{min-width:calc(100% - 60px)}.report-heading{display:block}.report-heading .option-pills{margin-top:14px}.task-alert b:last-child{display:none}.payment-breakdown{grid-template-columns:1fr 1fr}.payment-stat{min-height:124px;padding:13px}.payment-stat strong{font-size:21px}}
+@media(max-width:650px){.report-tabs{display:flex;overflow-x:auto;overscroll-behavior-inline:contain;scroll-snap-type:x proximity}.report-tab{min-width:150px;scroll-snap-align:start}}
     .payroll-sheet{min-width:1050px;border-collapse:separate;border-spacing:0}.payroll-sheet th{position:sticky;top:0;background:#f4f7fb;z-index:2}.payroll-sheet th:first-child,.payroll-sheet td:first-child{position:sticky;left:0;background:#fff;z-index:1;min-width:190px}.payroll-sheet th:first-child{background:#f4f7fb;z-index:3}.payroll-sheet input[type="time"]{min-width:112px}.payroll-sheet input[type="number"]{width:88px;padding:10px}.payroll-sheet td{vertical-align:middle}.payroll-sheet tbody tr:hover td{background:#fff9e8}.payroll-sheet tbody tr:hover td:first-child{background:#fff9e8}.report-kind-tabs{display:flex;gap:10px;margin:0 0 18px;overflow:auto}.report-kind-tabs button{white-space:nowrap}.salary-report-sheet{min-width:1180px;border-collapse:collapse}.salary-report-sheet th{background:#15233b;color:#fff;text-align:center;white-space:normal;line-height:1.35}.salary-report-sheet th:first-child,.salary-report-sheet td:first-child{position:sticky;left:0;z-index:2;text-align:left}.salary-report-sheet td:first-child{background:#fff}.salary-report-sheet th:first-child{background:#15233b;z-index:3}.salary-report-sheet td{text-align:right}.salary-report-sheet tbody tr:nth-child(even) td{background:#f8fafc}.salary-report-sheet tbody tr:nth-child(even) td:first-child{background:#f8fafc}.salary-report-sheet tfoot td{font-weight:850;background:#fff3cd;border-top:2px solid var(--gold)}
   
 /* Clean administration layout — 2026-09-04 */
