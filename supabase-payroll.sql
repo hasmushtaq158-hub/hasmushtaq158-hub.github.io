@@ -60,6 +60,17 @@ drop policy if exists payroll_entries_no_direct_access on public.payroll_entries
 create policy payroll_entries_no_direct_access on public.payroll_entries
   for all to authenticated using(false) with check(false);
 
+create table if not exists public.payroll_day_settings (
+  work_date date primary key,
+  day_type text not null check(day_type in ('NORMAL','HOLIDAY')),
+  updated_at timestamptz not null default now(),
+  updated_by uuid references auth.users(id)
+);
+alter table public.payroll_day_settings enable row level security;
+drop policy if exists payroll_day_settings_no_direct_access on public.payroll_day_settings;
+create policy payroll_day_settings_no_direct_access on public.payroll_day_settings
+  for all to authenticated using(false) with check(false);
+
 create or replace function public.manager_start_payroll_entry(
   p_worker_id uuid,p_work_date date,p_attraction_id bigint,p_started_time time,
   p_day_type text,p_note text default null
@@ -83,10 +94,40 @@ end;$function$;
 create or replace function public.manager_set_open_payroll_day_type(p_work_date date,p_day_type text)
 returns void language plpgsql security definer set search_path=public
 as $function$
+declare v_entry record; v_rate numeric(10,2); v_attraction text; v_worker_name text;
 begin
   if not public.park_is_manager() then raise exception 'MANAGER_REQUIRED'; end if;
   if p_day_type not in ('NORMAL','HOLIDAY') then raise exception 'INVALID_DAY_TYPE'; end if;
+  insert into public.payroll_day_settings(work_date,day_type,updated_at,updated_by)
+  values(p_work_date,p_day_type,now(),auth.uid())
+  on conflict(work_date) do update set day_type=excluded.day_type,updated_at=now(),updated_by=auth.uid();
   update public.payroll_entries set day_type=p_day_type where work_date=p_work_date and status='OPEN';
+  for v_entry in
+    select e.id,e.duration_minutes,e.bonus,e.deduction,a.name as attraction_name,
+      coalesce(p.display_name,pp.display_name,'') as worker_name
+    from public.payroll_entries e
+    left join public.attractions a on a.id=e.attraction_id
+    left join public.profiles p on p.id=e.worker_id
+    left join public.payroll_people pp on pp.id=e.payroll_person_id
+    where e.work_date=p_work_date and e.status='ACTIVE'
+  loop
+    v_attraction:=coalesce(v_entry.attraction_name,''); v_worker_name:=coalesce(v_entry.worker_name,'');
+    if position('кристиан' in lower(v_worker_name))>0 and position('марин' in lower(v_worker_name))>0 then v_rate:=200;
+    elsif position('колесо победы' in lower(v_attraction))>0 then v_rate:=case when p_day_type='HOLIDAY' then 200 else 180 end;
+    else v_rate:=case when p_day_type='HOLIDAY' then 180 else 150 end; end if;
+    update public.payroll_entries set day_type=p_day_type,hourly_rate=v_rate,
+      base_amount=round(v_entry.duration_minutes::numeric/60*v_rate,2),
+      total_amount=round(v_entry.duration_minutes::numeric/60*v_rate+coalesce(v_entry.bonus,0)-coalesce(v_entry.deduction,0),2)
+    where id=v_entry.id;
+  end loop;
+end;$function$;
+
+create or replace function public.manager_get_payroll_day_types(p_from date,p_to date)
+returns table(work_date date,day_type text) language plpgsql security definer set search_path=public
+as $function$
+begin
+  if not public.park_is_manager() then raise exception 'MANAGER_REQUIRED'; end if;
+  return query select s.work_date,s.day_type from public.payroll_day_settings s where s.work_date between p_from and p_to order by s.work_date;
 end;$function$;
 
 drop function if exists public.manager_finish_payroll_entry(bigint,time,numeric,numeric,text);
@@ -318,6 +359,7 @@ $function$;
 grant execute on function public.manager_add_payroll_entry(uuid,date,bigint,time,time,text,numeric,numeric,text) to authenticated;
 grant execute on function public.manager_start_payroll_entry(uuid,date,bigint,time,text,text) to authenticated;
 grant execute on function public.manager_set_open_payroll_day_type(date,text) to authenticated;
+grant execute on function public.manager_get_payroll_day_types(date,date) to authenticated;
 grant execute on function public.manager_finish_payroll_entry(bigint,time,numeric,numeric,text,text) to authenticated;
 grant execute on function public.manager_add_external_payroll_entry(text,date,bigint,time,time,text,numeric,numeric,text) to authenticated;
 grant execute on function public.manager_cancel_payroll_entry(bigint) to authenticated;
