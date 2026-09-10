@@ -84,7 +84,7 @@
       $("#logout").onclick=logout;$("#open-salary").onclick=()=>renderPayrollHistory();$("#retry-day").onclick=enterWorkday;
     }
     async function enterWorkday(){
-      stopPoll();shell(`<section class="hero"><h1>Проверяем назначение…</h1><p>Код рабочего дня больше не требуется</p></section><div class="spinner"></div>`);
+      stopPoll();shell(`<section class="hero"><h1>Проверяем назначение…</h1><p>Загружаем вашу игру…</p></section><div class="spinner"></div>`);
       try{S.state=await loadState(true);save(K.state,S.state);renderHome();await syncPending()}catch(x){const cached=load(K.state);if(networkError(x)&&cached){S.state=cached;renderHome();toast("Офлайн • последнее назначение")}else{renderCode();toast(errText(x))}}
     }
     async function renderPayrollHistory(from,to){
@@ -167,7 +167,7 @@
     function notifyTasks(tasks){const seen=load(K.seen,[]),fresh=tasks.filter(t=>!seen.includes(Number(t.id)));if(fresh.length)notify("Новая задача",fresh[0].task_text);save(K.seen,[...new Set([...seen,...tasks.map(t=>Number(t.id))])].slice(-200))}
     async function start(){
       window.addEventListener("online",()=>{toast("Интернет восстановлен");syncPending(true);if(S.state)poll()});window.addEventListener("offline",()=>{toast("Офлайн · продажи сохраняются на телефоне");if(S.state)renderHome()});
-      if("serviceWorker" in navigator)navigator.serviceWorker.register("./worker-sw.js?v=20260910-no-daily-code").catch(()=>{});
+      if("serviceWorker" in navigator)navigator.serviceWorker.register("./worker-sw.js?v=20260910-2").catch(()=>{});
       S.session=load(K.session);S.profile=load(K.profile);S.state=load(K.state);
       if(!S.session)return renderLogin();try{await profile();S.profile.must_change_pin?renderPin():enterWorkday()}catch(x){if(networkError(x)&&S.profile&&S.state){renderHome();toast("Офлайн • последнее назначение")}else{localStorage.removeItem(K.session);renderLogin();toast(errText(x))}}
     }
