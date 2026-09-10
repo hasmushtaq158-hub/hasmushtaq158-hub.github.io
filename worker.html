@@ -167,7 +167,7 @@
     function notifyTasks(tasks){const seen=load(K.seen,[]),fresh=tasks.filter(t=>!seen.includes(Number(t.id)));if(fresh.length)notify("Новая задача",fresh[0].task_text);save(K.seen,[...new Set([...seen,...tasks.map(t=>Number(t.id))])].slice(-200))}
     async function start(){
       window.addEventListener("online",()=>{toast("Интернет восстановлен");syncPending(true);if(S.state)poll()});window.addEventListener("offline",()=>{toast("Офлайн · продажи сохраняются на телефоне");if(S.state)renderHome()});
-      if("serviceWorker" in navigator)navigator.serviceWorker.register("./worker-sw.js").catch(()=>{});
+      if("serviceWorker" in navigator)navigator.serviceWorker.register("./worker-sw.js?v=20260910-no-daily-code").catch(()=>{});
       S.session=load(K.session);S.profile=load(K.profile);S.state=load(K.state);
       if(!S.session)return renderLogin();try{await profile();S.profile.must_change_pin?renderPin():enterWorkday()}catch(x){if(networkError(x)&&S.profile&&S.state){renderHome();toast("Офлайн • последнее назначение")}else{localStorage.removeItem(K.session);renderLogin();toast(errText(x))}}
     }
