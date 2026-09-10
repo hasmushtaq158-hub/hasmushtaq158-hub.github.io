@@ -330,12 +330,26 @@ function reportDayWorkDate(day) {
   const match = String(day.label || "").match(/^(\d{2})\.(\d{2})\.(\d{4})/);
   return match ? `${match[3]}-${match[2]}-${match[1]}` : null;
 }
+function applyUncountedPenaltyDeductions(rows, from, to) {
+  const result = (rows || []).map((row) => ({ ...row }));
+  for (const notice of Ae.notices || []) {
+    if (notice.notice_type !== "PENALTY" || notice.status !== "ACTIVE" || notice.deduct_from_salary) continue;
+    const date = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Samara" }).format(new Date(notice.created_at));
+    if (date < from || date > to) continue;
+    const row = result.find((item) => String(item.worker_id) === String(notice.worker_id));
+    if (!row) continue;
+    const amount = Number(notice.amount || 0);
+    row.penalty_deduction = Number(row.penalty_deduction || 0) + amount;
+    row.total_amount = Number(row.total_amount || 0) - amount;
+  }
+  return result;
+}
 async function loadReportDayPayroll(dayId) {
   const day = Ae.days.find((row) => Number(row.id) === Number(dayId)), workDate = reportDayWorkDate(day);
   Ae.reportPayrollDate = workDate;
   if (!workDate || workDate < "2026-09-01") return void (Ae.reportPayrollSummary = []);
   const { data, error } = await Ae.client.rpc("manager_payroll_summary", { p_from: workDate, p_to: workDate });
-  Ae.reportPayrollSummary = error ? [] : data || [];
+  Ae.reportPayrollSummary = error ? [] : applyUncountedPenaltyDeductions(data || [], workDate, workDate);
   if (error) Er("Не удалось загрузить зарплату за выбранный день");
 }
 function payrollKnownAttraction(workerId, workDate) {
@@ -441,7 +455,7 @@ async function t0() {
     Ae.client.rpc("manager_client_errors", {}),
     Ae.client.rpc("manager_audit_log", { p_limit: 100 })
   ]);
-  [r, e, t, i].find((l) => l.error)?.error && Er("\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043E\u0431\u043D\u043E\u0432\u0438\u0442\u044C \u0434\u0430\u043D\u043D\u044B\u0435"), Ae.days = r.data || [], Ae.day = Ae.days.find((l) => l.status === "OPEN") || null, Ae.attractions = e.data || [], Ae.workers = t.data || [], Ae.shifts = i.data || [], Ae.saleOptions = sale.data || [], Ae.assignments = assignments.data || [], Ae.tasks = tasks.data || [], Ae.replacements = replacementDashboard.data || [], Ae.dailyReplacement = dailyReplacement.data || [], Ae.replacementSettings = replacementSettings.data || [], Ae.notices = notices.data || [], Ae.payrollEntries = payrollEntries.data || [], Ae.payrollSummary = payrollSummary.data || [], Ae.payrollReportFirst = payrollReportFirst.data || [], Ae.payrollReportSecond = payrollReportSecond.data || [], Ae.workerPresence = workerPresence.data || [], Ae.payrollLocks = payrollLocks.data || [], Ae.payrollDayTypes = payrollDayTypes.data || [], Ae.clientErrors = clientErrors.data || [], Ae.auditLog = auditLog.data || [], Ae.payrollFrom = payrollFrom, Ae.payrollTo = payrollTo;
+  [r, e, t, i].find((l) => l.error)?.error && Er("\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043E\u0431\u043D\u043E\u0432\u0438\u0442\u044C \u0434\u0430\u043D\u043D\u044B\u0435"), Ae.days = r.data || [], Ae.day = Ae.days.find((l) => l.status === "OPEN") || null, Ae.attractions = e.data || [], Ae.workers = t.data || [], Ae.shifts = i.data || [], Ae.saleOptions = sale.data || [], Ae.assignments = assignments.data || [], Ae.tasks = tasks.data || [], Ae.replacements = replacementDashboard.data || [], Ae.dailyReplacement = dailyReplacement.data || [], Ae.replacementSettings = replacementSettings.data || [], Ae.notices = notices.data || [], Ae.payrollEntries = payrollEntries.data || [], Ae.payrollSummary = applyUncountedPenaltyDeductions(payrollSummary.data || [], payrollFrom, payrollTo), Ae.payrollReportFirst = applyUncountedPenaltyDeductions(payrollReportFirst.data || [], reportDates.firstFrom, reportDates.firstTo), Ae.payrollReportSecond = applyUncountedPenaltyDeductions(payrollReportSecond.data || [], reportDates.secondFrom, reportDates.secondTo), Ae.workerPresence = workerPresence.data || [], Ae.payrollLocks = payrollLocks.data || [], Ae.payrollDayTypes = payrollDayTypes.data || [], Ae.clientErrors = clientErrors.data || [], Ae.auditLog = auditLog.data || [], Ae.payrollFrom = payrollFrom, Ae.payrollTo = payrollTo;
   const savedDayType = Ae.payrollDayTypes.find((row) => row.work_date === Ae.payrollDraft.date);
   if (savedDayType) Ae.payrollDraft.day_type = savedDayType.day_type;
   const selectedReportDayId = Ae.reportDayId || Ae.days[0]?.id;
