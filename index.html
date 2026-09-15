@@ -668,7 +668,7 @@ function printPayrollPeriod(period) {
   const from = first ? dates.firstFrom : dates.secondFrom, to = first ? dates.firstTo : dates.secondTo, num = (row, field) => Number(row?.[field] || 0), accrued = (row) => num(row,"base_amount") + num(row,"bonus"), penalties = (row) => num(row,"penalty_deduction"), other = (row) => num(row,"manual_deduction");
   const totals = rows.reduce((sum,row) => ({ minutes:sum.minutes+num(row,"duration_minutes"), accrued:sum.accrued+accrued(row), penalties:sum.penalties+penalties(row), other:sum.other+other(row), pay:sum.pay+num(row,"total_amount") }), {minutes:0,accrued:0,penalties:0,other:0,pay:0});
   const body = rows.map((row) => `<tr><td>${Mt(row.worker_name)}</td><td>${(num(row,"duration_minutes")/60).toFixed(2)}</td><td>${dr(accrued(row))}</td><td class="penalty">${dr(penalties(row))}</td><td>${dr(other(row))}</td><td class="pay">${dr(num(row,"total_amount"))}</td></tr>`).join("") || '<tr><td colspan="6">Нет записей</td></tr>';
-  const popup = window.open("", "_blank", "noopener,noreferrer");
+  const popup = window.open("", "_blank");
   if (!popup) return Er("Разрешите всплывающее окно для печати PDF");
   popup.document.write(`<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>Зарплата ${from} — ${to}</title><style>@page{size:A4 landscape;margin:12mm}body{font-family:Arial,sans-serif;color:#172238}h1{margin:0 0 6px;font-size:22px}p{margin:0 0 18px;color:#667085}button{margin-bottom:16px;padding:10px 16px}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #cfd6df;padding:8px;text-align:right}th{background:#15233b;color:white}th:first-child,td:first-child{text-align:left}.penalty{color:#b42318;font-weight:700}.pay{font-weight:800}tfoot td{background:#fff3cd;font-weight:800}@media print{button{display:none}}</style></head><body><button onclick="print()">Печать / Сохранить PDF</button><h1>Заработная плата</h1><p>Период: ${from} — ${to} · Начислено − штрафы − другие вычеты = к выплате</p><table><thead><tr><th>Сотрудник</th><th>Часы</th><th>Начислено</th><th>Штрафы</th><th>Другие вычеты</th><th>К выплате</th></tr></thead><tbody>${body}</tbody><tfoot><tr><td>ИТОГО</td><td>${(totals.minutes/60).toFixed(2)}</td><td>${dr(totals.accrued)}</td><td class="penalty">${dr(totals.penalties)}</td><td>${dr(totals.other)}</td><td class="pay">${dr(totals.pay)}</td></tr></tfoot></table><script>setTimeout(()=>print(),350)<\/script></body></html>`);
   popup.document.close();
@@ -954,7 +954,7 @@ function wd(detailed) {
   popup.document.close();
 }
 async function Wy() {
-  if ("serviceWorker" in navigator) navigator.serviceWorker.register("./manager-sw.js?v=20260914-payroll-penalties").catch(() => {});
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("./manager-sw.js?v=20260915-payroll-print-fix").catch(() => {});
   const r = Ay();
   Ae.client = G2(r.url, r.key, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
   const e = location.hash.includes("type=recovery") || location.search.includes("type=recovery");
